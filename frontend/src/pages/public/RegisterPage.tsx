@@ -4,16 +4,45 @@ import { Terminal, User, Mail, Building2, CheckCircle2 } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { useToast } from '../../context/ToastContext';
+import { useAuth } from '../../context/AuthContext';
 import { mockColleges } from '../../data/mockData';
 
 export const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { addToast } = useToast();
+  const { registerUser } = useAuth();
   const [role, setRole] = useState<'student' | 'mentor'>('student');
   const [submitted, setSubmitted] = useState(false);
 
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    collegeId: mockColleges[0]?.id || '',
+    branchName: 'Computer Science & Engineering',
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    const selectedCollege = mockColleges.find(c => c.id === formData.collegeId);
+    
+    // Register the user in the pending queue
+    registerUser({
+      name: formData.name,
+      email: formData.email,
+      password: formData.password,
+      role: role,
+      collegeId: formData.collegeId,
+      collegeName: selectedCollege?.name || 'Unknown College',
+      branchName: formData.branchName,
+    });
+
     setSubmitted(true);
     addToast('info', 'Registration Submitted', 'Your account application has been routed to Admin Approval Queue.');
   };
@@ -76,7 +105,10 @@ export const RegisterPage: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-300 mb-1">Full Name</label>
                 <input
                   type="text"
+                  name="name"
                   required
+                  value={formData.name}
+                  onChange={handleChange}
                   placeholder="Rohan Mehta"
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 />
@@ -85,7 +117,10 @@ export const RegisterPage: React.FC = () => {
                 <label className="block text-xs font-bold text-slate-300 mb-1">College Email</label>
                 <input
                   type="email"
+                  name="email"
                   required
+                  value={formData.email}
+                  onChange={handleChange}
                   placeholder="rohan@krmangalam.edu.in"
                   className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
                 />
@@ -95,7 +130,12 @@ export const RegisterPage: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Select College</label>
-                <select className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <select
+                  name="collegeId"
+                  value={formData.collegeId}
+                  onChange={handleChange}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                >
                   {mockColleges.map((c) => (
                     <option key={c.id} value={c.id}>{c.name}</option>
                   ))}
@@ -103,7 +143,12 @@ export const RegisterPage: React.FC = () => {
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-300 mb-1">Branch / Department</label>
-                <select className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500">
+                <select
+                  name="branchName"
+                  value={formData.branchName}
+                  onChange={handleChange}
+                  className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+                >
                   <option>Computer Science & Engineering</option>
                   <option>AI & Data Science</option>
                 </select>
@@ -114,7 +159,10 @@ export const RegisterPage: React.FC = () => {
               <label className="block text-xs font-bold text-slate-300 mb-1">Password</label>
               <input
                 type="password"
+                name="password"
                 required
+                value={formData.password}
+                onChange={handleChange}
                 placeholder="••••••••"
                 className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
               />
