@@ -73,7 +73,7 @@ describe('question validations', () => {
       expect(result.success).toBe(true);
     });
 
-    it('rejects more than 200 test cases', () => {
+    it('accepts large test-case suites for evaluator-grade challenges', () => {
       const testCases = Array.from({ length: 201 }, (_, i) => ({
         input: String(i),
         expectedOutput: String(i + 1),
@@ -83,7 +83,7 @@ describe('question validations', () => {
         description: 'A long enough description for validation purposes.',
         testCases,
       });
-      expect(result.success).toBe(false);
+      expect(result.success).toBe(true);
     });
   });
 

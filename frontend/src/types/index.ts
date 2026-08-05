@@ -2,7 +2,22 @@ export type Role = 'student' | 'mentor' | 'admin';
 
 export type Difficulty = 'Easy' | 'Medium' | 'Hard' | 'Expert';
 
-export type ProblemType = 'dsa' | 'frontend' | 'fullstack';
+export type ProblemType =
+  | 'dsa'
+  | 'sql'
+  | 'frontend'
+  | 'backend'
+  | 'fullstack'
+  | 'react'
+  | 'nodejs'
+  | 'javascript'
+  | 'typescript'
+  | 'html-css'
+  | 'bug-fixing'
+  | 'debugging'
+  | 'mcq'
+  | 'system-design'
+  | 'ai-challenge';
 
 export type UserStatus = 'active' | 'pending' | 'suspended' | 'rejected';
 
@@ -63,9 +78,20 @@ export interface Question {
   technology: string[];
   acceptanceRate: number; // e.g. 74.2
   estimatedMinutes: number;
+  maxScore?: number;
+  visibility?: 'public' | 'private' | 'organization';
+  status?: 'draft' | 'published' | 'archived';
   description: string;
+  problemStatement?: string;
+  inputFormat?: string;
+  outputFormat?: string;
+  notes?: string;
+  topics?: string[];
+  supportedLanguages?: string[];
   requirements?: string[];
   constraints?: string[];
+  hints?: string[];
+  editorial?: string;
   examples: {
     input: string;
     output: string;
@@ -76,7 +102,10 @@ export interface Question {
     id: string;
     input: string;
     expectedOutput: string;
+    explanation?: string;
     isHidden?: boolean;
+    isSample?: boolean;
+    weight?: number;
   }[];
   solvedStatus?: 'unsolved' | 'attempted' | 'solved';
   isBookmarked?: boolean;

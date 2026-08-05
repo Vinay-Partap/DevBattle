@@ -9,6 +9,16 @@ import {
   questionStarterCodes,
   questionTestCases,
   questionBookmarks,
+  questionTags,
+  questionTopics,
+  questionLanguages,
+  questionHints,
+  questionEditorials,
+  questionAssets,
+  questionRequirements,
+  questionAiReviewRules,
+  questionSupportedFrameworks,
+  questionReferenceDesigns,
   QuestionRow,
   ExampleRow,
   StarterCodeRow,
@@ -35,6 +45,16 @@ export interface QuestionWithRelations extends QuestionRow {
   examples: ExampleRow[];
   starterCodes: StarterCodeRow[];
   testCases: TestCaseRow[];
+  tagRows?: Array<{ name: string }>;
+  topicRows?: Array<{ name: string }>;
+  languageRows?: Array<{ language: string; sortOrder: number }>;
+  hints?: Array<{ content: string; sortOrder: number }>;
+  editorialRows?: Array<{ content: string }>;
+  assets?: Array<any>;
+  requirementRows?: Array<any>;
+  aiReviewRules?: Array<any>;
+  frameworkRows?: Array<{ name: string }>;
+  referenceDesigns?: Array<any>;
 }
 
 const SORTABLE_COLUMNS = [
@@ -46,7 +66,39 @@ const SORTABLE_COLUMNS = [
   'updatedAt',
 ];
 
-const withChildren = { examples: true, starterCodes: true, testCases: true } as const;
+const PROBLEM_TYPES = [
+  'dsa',
+  'sql',
+  'frontend',
+  'backend',
+  'fullstack',
+  'react',
+  'nodejs',
+  'javascript',
+  'typescript',
+  'html-css',
+  'bug-fixing',
+  'debugging',
+  'mcq',
+  'system-design',
+  'ai-challenge',
+] as const;
+
+const withChildren = {
+  examples: true,
+  starterCodes: true,
+  testCases: true,
+  tagRows: true,
+  topicRows: true,
+  languageRows: true,
+  hints: true,
+  editorialRows: true,
+  assets: true,
+  requirementRows: true,
+  aiReviewRules: true,
+  frameworkRows: true,
+  referenceDesigns: true,
+} as const;
 
 /** Assemble a flat row + children into the API QuestionDetail shape. */
 const assemble = (row: QuestionWithRelations, isBookmarked = false): QuestionDetail => ({
@@ -54,20 +106,42 @@ const assemble = (row: QuestionWithRelations, isBookmarked = false): QuestionDet
   title: row.title,
   slug: row.slug,
   description: row.description,
+  problemStatement: (row as any).problemStatement ?? null,
+  inputFormat: (row as any).inputFormat ?? null,
+  outputFormat: (row as any).outputFormat ?? null,
+  notes: (row as any).notes ?? null,
   type: row.type as any,
   difficulty: row.difficulty as any,
   category: row.category,
-  tags: row.tags ?? [],
+  tags: row.tagRows?.length ? row.tagRows.map((t) => t.name) : (row.tags ?? []),
+  topics: row.topicRows?.map((t) => t.name) ?? [],
   companies: row.companies ?? [],
   technology: row.technology ?? [],
   requirements: row.requirements ?? [],
   constraints: row.constraints ?? [],
+  supportedLanguages:
+    row.languageRows
+      ?.slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((l) => l.language) ?? [],
   acceptanceRate: row.acceptanceRate ?? 0,
   estimatedMinutes: row.estimatedMinutes ?? 30,
+  maxScore: (row as any).maxScore ?? 100,
   timeLimitMs: row.timeLimitMs ?? 2000,
   memoryLimitMb: row.memoryLimitMb ?? 256,
+  maxCodeSizeKb: (row as any).maxCodeSizeKb ?? 256,
+  executionTimeoutMs: (row as any).executionTimeoutMs ?? 5000,
   isPremium: row.isPremium ?? false,
+  visibility: ((row as any).visibility ?? 'organization') as any,
   status: row.status as any,
+  plagiarismEnabled: (row as any).plagiarismEnabled ?? false,
+  similarityThreshold: (row as any).similarityThreshold ?? 80,
+  maxAttempts: (row as any).maxAttempts ?? null,
+  submissionDeadline: (row as any).submissionDeadline
+    ? (row as any).submissionDeadline.toISOString()
+    : null,
+  allowLateSubmission: (row as any).allowLateSubmission ?? false,
+  scoringConfig: ((row as any).scoringConfig ?? {}) as any,
   createdBy: row.createdBy,
   attemptedCount: row.attemptedCount ?? 0,
   solvedCount: row.solvedCount ?? 0,
@@ -84,12 +158,64 @@ const assemble = (row: QuestionWithRelations, isBookmarked = false): QuestionDet
       id: t.id,
       input: t.input,
       expectedOutput: t.expectedOutput,
+      explanation: (t as any).explanation ?? null,
       isHidden: t.isHidden,
       isSample: t.isSample,
+      weight: (t as any).weight ?? 1,
       sortOrder: t.sortOrder,
     })),
+  hints:
+    row.hints
+      ?.slice()
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((h) => h.content) ?? [],
+  editorial: row.editorialRows?.[0]?.content ?? null,
+  assets:
+    row.assets
+      ?.slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((a) => ({
+        id: a.id,
+        type: a.type,
+        name: a.name,
+        url: a.url,
+        metadata: a.metadata ?? {},
+        sortOrder: a.sortOrder ?? 0,
+      })) ?? [],
+  normalizedRequirements:
+    row.requirementRows
+      ?.slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((r) => ({
+        id: r.id,
+        type: r.type,
+        content: r.content,
+        metadata: r.metadata ?? {},
+        sortOrder: r.sortOrder ?? 0,
+      })) ?? [],
+  aiReviewRules:
+    row.aiReviewRules?.map((r) => ({
+      id: r.id,
+      criterion: r.criterion,
+      enabled: r.enabled,
+      weight: r.weight,
+    })) ?? [],
+  supportedFrameworks: row.frameworkRows?.map((f) => f.name) ?? [],
+  referenceDesigns:
+    row.referenceDesigns
+      ?.slice()
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((d) => ({
+        id: d.id,
+        type: d.type,
+        url: d.url ?? null,
+        figmaUrl: d.figmaUrl ?? null,
+        description: d.description ?? null,
+        sortOrder: d.sortOrder ?? 0,
+      })) ?? [],
   isBookmarked,
 });
+
 
 const orderColumnFor = (sortBy: string | undefined) => {
   switch (sanitizeSortColumn(sortBy, SORTABLE_COLUMNS, 'createdAt')) {
@@ -153,7 +279,7 @@ const loadFallback = (): QuestionDetail[] => {
       fs.mkdirSync(FALLBACK_DIR, { recursive: true });
     }
     if (!fs.existsSync(FALLBACK_FILE)) {
-      const defaultQuestions: QuestionDetail[] = [
+      const defaultQuestions: any[] = [
         {
           id: 'aaaaaaaa-0000-4000-8000-000000000101',
           title: 'Two Sum & Target Pointer',
@@ -390,6 +516,87 @@ const saveFallback = (questionsList: QuestionDetail[]) => {
   }
 };
 
+const replaceRows = async <T>(
+  tx: any,
+  table: any,
+  questionId: string,
+  rows: T[] | undefined,
+  build: (item: T, index: number) => Record<string, unknown>,
+): Promise<void> => {
+  if (rows === undefined) return;
+  await tx.delete(table).where(eq(table.questionId, questionId));
+  if (rows.length > 0) {
+    await tx.insert(table).values(rows.map((item, index) => ({ questionId, ...build(item, index) })));
+  }
+};
+
+const replaceNormalizedChildren = async (
+  tx: any,
+  questionId: string,
+  dto: CreateQuestionDto | UpdateQuestionDto,
+): Promise<void> => {
+  await replaceRows(tx, questionTags, questionId, dto.tags, (name) => ({ name }));
+  await replaceRows(tx, questionTopics, questionId, dto.topics, (name) => ({ name }));
+
+  const languages = dto.supportedLanguages ??
+    (dto.starterCode ? Object.keys(dto.starterCode) : undefined);
+  await replaceRows(tx, questionLanguages, questionId, languages, (language, index) => ({
+    language,
+    sortOrder: index,
+  }));
+
+  await replaceRows(tx, questionHints, questionId, dto.hints, (content, index) => ({
+    content,
+    sortOrder: index,
+  }));
+
+  if (dto.editorial !== undefined) {
+    await tx.delete(questionEditorials).where(eq(questionEditorials.questionId, questionId));
+    if (dto.editorial) {
+      await tx.insert(questionEditorials).values({ questionId, content: dto.editorial });
+    }
+  }
+
+  await replaceRows(tx, questionAssets, questionId, dto.assets, (asset, index) => ({
+    type: asset.type ?? 'other',
+    name: asset.name,
+    url: asset.url,
+    metadata: asset.metadata ?? {},
+    sortOrder: asset.sortOrder ?? index,
+  }));
+
+  await replaceRows(
+    tx,
+    questionRequirements,
+    questionId,
+    dto.normalizedRequirements,
+    (requirement, index) => ({
+      type: requirement.type,
+      content: requirement.content,
+      metadata: requirement.metadata ?? {},
+      sortOrder: requirement.sortOrder ?? index,
+    }),
+  );
+
+  await replaceRows(tx, questionAiReviewRules, questionId, dto.aiReviewRules, (rule) => ({
+    criterion: rule.criterion,
+    enabled: rule.enabled ?? true,
+    weight: rule.weight ?? 1,
+  }));
+
+  await replaceRows(tx, questionSupportedFrameworks, questionId, dto.supportedFrameworks, (name) => ({
+    name,
+  }));
+
+  await replaceRows(tx, questionReferenceDesigns, questionId, dto.referenceDesigns, (design, index) => ({
+    type: design.type ?? 'other',
+    url: design.url ?? null,
+    figmaUrl: design.figmaUrl ?? null,
+    description: design.description ?? null,
+    sortOrder: design.sortOrder ?? index,
+  }));
+};
+
 /* --------------------------- Repository Class --------------------------- */
 
 export const questionRepository = {
@@ -518,6 +725,10 @@ export const questionRepository = {
             title: dto.title,
             slug: dto.slug,
             description: dto.description,
+            problemStatement: dto.problemStatement ?? null,
+            inputFormat: dto.inputFormat ?? null,
+            outputFormat: dto.outputFormat ?? null,
+            notes: dto.notes ?? null,
             type: dto.type ?? 'dsa',
             difficulty: dto.difficulty ?? 'Medium',
             category: dto.category ?? 'General',
@@ -528,10 +739,22 @@ export const questionRepository = {
             constraints: dto.constraints ?? [],
             acceptanceRate: dto.acceptanceRate ?? 0,
             estimatedMinutes: dto.estimatedMinutes ?? 30,
+            maxScore: dto.maxScore ?? 100,
             timeLimitMs: dto.timeLimitMs ?? 2000,
             memoryLimitMb: dto.memoryLimitMb ?? 256,
+            maxCodeSizeKb: dto.maxCodeSizeKb ?? 256,
+            executionTimeoutMs: dto.executionTimeoutMs ?? 5000,
             isPremium: dto.isPremium ?? false,
+            visibility: dto.visibility ?? 'organization',
             status: dto.status,
+            plagiarismEnabled: dto.plagiarism?.enabled ?? false,
+            similarityThreshold: dto.plagiarism?.similarityThreshold ?? 80,
+            maxAttempts: dto.submission?.maxAttempts ?? null,
+            submissionDeadline: dto.submission?.submissionDeadline
+              ? new Date(dto.submission.submissionDeadline)
+              : null,
+            allowLateSubmission: dto.submission?.allowLateSubmission ?? false,
+            scoringConfig: dto.scoring ?? {},
             createdBy: dto.createdBy,
           })
           .returning();
@@ -563,12 +786,16 @@ export const questionRepository = {
               questionId: row.id,
               input: t.input,
               expectedOutput: t.expectedOutput,
+              explanation: t.explanation ?? null,
               isHidden: t.isHidden ?? false,
               isSample: t.isSample ?? false,
+              weight: t.weight ?? 1,
               sortOrder: t.sortOrder ?? i,
             })),
           );
         }
+
+        await replaceNormalizedChildren(tx, row.id, dto);
 
         const full = await tx.query.questions.findFirst({
           where: eq(questions.id, row.id),
@@ -584,20 +811,36 @@ export const questionRepository = {
         title: dto.title,
         slug: dto.slug,
         description: dto.description,
+        problemStatement: dto.problemStatement ?? null,
+        inputFormat: dto.inputFormat ?? null,
+        outputFormat: dto.outputFormat ?? null,
+        notes: dto.notes ?? null,
         type: (dto.type as any) ?? 'dsa',
         difficulty: (dto.difficulty as any) ?? 'Medium',
         category: dto.category ?? 'General',
         tags: dto.tags ?? [],
+        topics: dto.topics ?? [],
         companies: dto.companies ?? [],
         technology: dto.technology ?? [],
         requirements: dto.requirements ?? [],
         constraints: dto.constraints ?? [],
+        supportedLanguages: dto.supportedLanguages ?? Object.keys(dto.starterCode ?? {}),
         acceptanceRate: dto.acceptanceRate ?? 0,
         estimatedMinutes: dto.estimatedMinutes ?? 30,
+        maxScore: dto.maxScore ?? 100,
         timeLimitMs: dto.timeLimitMs ?? 2000,
         memoryLimitMb: dto.memoryLimitMb ?? 256,
+        maxCodeSizeKb: dto.maxCodeSizeKb ?? 256,
+        executionTimeoutMs: dto.executionTimeoutMs ?? 5000,
         isPremium: dto.isPremium ?? false,
+        visibility: dto.visibility ?? 'organization',
         status: dto.status as any,
+        plagiarismEnabled: dto.plagiarism?.enabled ?? false,
+        similarityThreshold: dto.plagiarism?.similarityThreshold ?? 80,
+        maxAttempts: dto.submission?.maxAttempts ?? null,
+        submissionDeadline: dto.submission?.submissionDeadline ?? null,
+        allowLateSubmission: dto.submission?.allowLateSubmission ?? false,
+        scoringConfig: dto.scoring ?? {},
         createdBy: dto.createdBy,
         attemptedCount: 0,
         solvedCount: 0,
@@ -610,10 +853,19 @@ export const questionRepository = {
           id: `tc-${id}-${i}`,
           input: t.input,
           expectedOutput: t.expectedOutput,
+          explanation: t.explanation ?? null,
           isHidden: t.isHidden ?? false,
           isSample: t.isSample ?? false,
+          weight: t.weight ?? 1,
           sortOrder: t.sortOrder ?? i,
         })),
+        hints: dto.hints ?? [],
+        editorial: dto.editorial ?? null,
+        assets: dto.assets ?? [],
+        normalizedRequirements: dto.normalizedRequirements ?? [],
+        aiReviewRules: dto.aiReviewRules ?? [],
+        supportedFrameworks: dto.supportedFrameworks ?? [],
+        referenceDesigns: dto.referenceDesigns ?? [],
         isBookmarked: false,
       };
       list.push(newQ);
@@ -635,6 +887,12 @@ export const questionRepository = {
             ...(patch.title !== undefined ? { title: patch.title } : {}),
             ...(patch.slug !== undefined ? { slug: patch.slug } : {}),
             ...(patch.description !== undefined ? { description: patch.description } : {}),
+            ...(patch.problemStatement !== undefined
+              ? { problemStatement: patch.problemStatement }
+              : {}),
+            ...(patch.inputFormat !== undefined ? { inputFormat: patch.inputFormat } : {}),
+            ...(patch.outputFormat !== undefined ? { outputFormat: patch.outputFormat } : {}),
+            ...(patch.notes !== undefined ? { notes: patch.notes } : {}),
             ...(patch.type !== undefined ? { type: patch.type } : {}),
             ...(patch.difficulty !== undefined ? { difficulty: patch.difficulty } : {}),
             ...(patch.category !== undefined ? { category: patch.category } : {}),
@@ -647,9 +905,31 @@ export const questionRepository = {
             ...(patch.estimatedMinutes !== undefined
               ? { estimatedMinutes: patch.estimatedMinutes }
               : {}),
+            ...(patch.maxScore !== undefined ? { maxScore: patch.maxScore } : {}),
             ...(patch.timeLimitMs !== undefined ? { timeLimitMs: patch.timeLimitMs } : {}),
             ...(patch.memoryLimitMb !== undefined ? { memoryLimitMb: patch.memoryLimitMb } : {}),
+            ...(patch.maxCodeSizeKb !== undefined ? { maxCodeSizeKb: patch.maxCodeSizeKb } : {}),
+            ...(patch.executionTimeoutMs !== undefined
+              ? { executionTimeoutMs: patch.executionTimeoutMs }
+              : {}),
             ...(patch.isPremium !== undefined ? { isPremium: patch.isPremium } : {}),
+            ...(patch.visibility !== undefined ? { visibility: patch.visibility } : {}),
+            ...(patch.plagiarism !== undefined
+              ? {
+                  plagiarismEnabled: patch.plagiarism.enabled ?? false,
+                  similarityThreshold: patch.plagiarism.similarityThreshold ?? 80,
+                }
+              : {}),
+            ...(patch.submission !== undefined
+              ? {
+                  maxAttempts: patch.submission.maxAttempts ?? null,
+                  submissionDeadline: patch.submission.submissionDeadline
+                    ? new Date(patch.submission.submissionDeadline)
+                    : null,
+                  allowLateSubmission: patch.submission.allowLateSubmission ?? false,
+                }
+              : {}),
+            ...(patch.scoring !== undefined ? { scoringConfig: patch.scoring } : {}),
             updatedAt: new Date(),
           })
           .where(eq(questions.id, id))
@@ -689,13 +969,17 @@ export const questionRepository = {
                 questionId: id,
                 input: t.input,
                 expectedOutput: t.expectedOutput,
+                explanation: t.explanation ?? null,
                 isHidden: t.isHidden ?? false,
                 isSample: t.isSample ?? false,
+                weight: t.weight ?? 1,
                 sortOrder: t.sortOrder ?? i,
               })),
             );
           }
         }
+
+        await replaceNormalizedChildren(tx, id, patch);
 
         const full = await tx.query.questions.findFirst({
           where: eq(questions.id, id),
@@ -725,8 +1009,10 @@ export const questionRepository = {
           id: `tc-${id}-${i}`,
           input: t.input,
           expectedOutput: t.expectedOutput,
+          explanation: t.explanation ?? null,
           isHidden: t.isHidden ?? false,
           isSample: t.isSample ?? false,
+          weight: t.weight ?? 1,
           sortOrder: t.sortOrder ?? i,
         }));
       }
@@ -976,7 +1262,7 @@ export const questionRepository = {
         total: totalRows[0]?.value ?? 0,
         byStatus: toRecord(byStatus, ['draft', 'published', 'archived'] as const),
         byDifficulty: toRecord(byDifficulty, ['Easy', 'Medium', 'Hard', 'Expert'] as const),
-        byType: toRecord(byType, ['dsa', 'frontend', 'fullstack'] as const),
+        byType: toRecord(byType, PROBLEM_TYPES),
         totalAttempts,
         totalSolves,
         overallAcceptanceRate:
@@ -994,9 +1280,9 @@ export const questionRepository = {
       const hard = list.filter((q) => q.difficulty === 'Hard').length;
       const expert = list.filter((q) => q.difficulty === 'Expert').length;
 
-      const dsa = list.filter((q) => q.type === 'dsa').length;
-      const frontend = list.filter((q) => q.type === 'frontend').length;
-      const fullstack = list.filter((q) => q.type === 'fullstack').length;
+      const byType = Object.fromEntries(
+        PROBLEM_TYPES.map((type) => [type, list.filter((q) => q.type === type).length]),
+      ) as any;
 
       const totalAttempts = list.reduce((acc, q) => acc + q.attemptedCount, 0);
       const totalSolves = list.reduce((acc, q) => acc + q.solvedCount, 0);
@@ -1005,7 +1291,7 @@ export const questionRepository = {
         total,
         byStatus: { draft, published, archived },
         byDifficulty: { Easy: easy, Medium: medium, Hard: hard, Expert: expert },
-        byType: { dsa, frontend, fullstack },
+        byType,
         totalAttempts,
         totalSolves,
         overallAcceptanceRate: totalAttempts > 0 ? Math.round((totalSolves / totalAttempts) * 10000) / 100 : 0,

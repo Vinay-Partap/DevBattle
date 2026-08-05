@@ -108,7 +108,7 @@ export class QuestionService {
       ...dto,
       slug,
       createdBy: requester.id,
-      status: 'draft',
+      status: dto.status ?? 'draft',
     });
   }
 

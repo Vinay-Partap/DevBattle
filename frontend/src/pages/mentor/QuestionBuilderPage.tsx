@@ -1,44 +1,261 @@
-import React, { useState } from 'react';
-import { Plus, AlertCircle } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertCircle, CheckCircle2, Code2, FileText, Play, Plus, Settings, UploadCloud } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
+import { Badge } from '../../components/ui/Badge';
 import { useToast } from '../../context/ToastContext';
+import { Difficulty, ProblemType, Question } from '../../types';
+
+const QUESTION_TYPES: { id: ProblemType; label: string }[] = [
+  { id: 'dsa', label: 'DSA' },
+  { id: 'sql', label: 'SQL' },
+  { id: 'frontend', label: 'Frontend' },
+  { id: 'backend', label: 'Backend' },
+  { id: 'fullstack', label: 'Full Stack' },
+  { id: 'react', label: 'React' },
+  { id: 'nodejs', label: 'Node.js' },
+  { id: 'javascript', label: 'JavaScript' },
+  { id: 'typescript', label: 'TypeScript' },
+  { id: 'html-css', label: 'HTML/CSS' },
+  { id: 'bug-fixing', label: 'Bug Fixing' },
+  { id: 'debugging', label: 'Debugging' },
+  { id: 'mcq', label: 'MCQ' },
+  { id: 'system-design', label: 'System Design' },
+  { id: 'ai-challenge', label: 'AI Challenge' },
+];
+
+const LANGUAGES = ['javascript', 'typescript', 'python', 'java', 'cpp', 'go', 'rust', 'sql'];
+const FRONTEND_TECH = ['HTML', 'CSS', 'Tailwind', 'Bootstrap', 'React', 'Next.js', 'Redux', 'Vue', 'Angular'];
+const REQUIRED_FEATURES = [
+  'Responsive Design',
+  'Dark Mode',
+  'Authentication',
+  'CRUD',
+  'Search',
+  'Pagination',
+  'Filtering',
+  'Sorting',
+  'API Integration',
+  'Animations',
+  'Accessibility',
+  'SEO',
+  'State Management',
+];
+const AI_CRITERIA = [
+  'Code Readability',
+  'Naming Convention',
+  'Architecture',
+  'Optimization',
+  'Best Practices',
+  'Security',
+  'Performance',
+  'Accessibility',
+  'Responsive Design',
+  'Documentation',
+];
+
+const steps = [
+  { id: 1, label: 'Basic', icon: <FileText className="w-4 h-4" /> },
+  { id: 2, label: 'Statement', icon: <Code2 className="w-4 h-4" /> },
+  { id: 3, label: 'Languages', icon: <Play className="w-4 h-4" /> },
+  { id: 4, label: 'Test Cases', icon: <CheckCircle2 className="w-4 h-4" /> },
+  { id: 5, label: 'Settings', icon: <Settings className="w-4 h-4" /> },
+];
+
+const csv = (value: string): string[] =>
+  value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
 export const QuestionBuilderPage: React.FC = () => {
   const { addToast } = useToast();
-  const [title, setTitle] = useState('');
-  const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard' | 'Expert'>('Medium');
-  const [category, setCategory] = useState('General');
-  const [description, setDescription] = useState('');
-  const [error, setError] = useState('');
+  const [step, setStep] = useState(1);
+  const [drafts, setDrafts] = useState<Question[]>([]);
+  const [loadingDrafts, setLoadingDrafts] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleCreate = async (e: React.FormEvent) => {
+  const [title, setTitle] = useState('');
+  const [type, setType] = useState<ProblemType>('dsa');
+  const [difficulty, setDifficulty] = useState<Difficulty>('Medium');
+  const [category, setCategory] = useState('General');
+  const [tags, setTags] = useState('');
+  const [topics, setTopics] = useState('');
+  const [estimatedMinutes, setEstimatedMinutes] = useState(30);
+  const [maxScore, setMaxScore] = useState(100);
+  const [visibility, setVisibility] = useState<'public' | 'private' | 'organization'>('organization');
+
+  const [description, setDescription] = useState('');
+  const [inputFormat, setInputFormat] = useState('');
+  const [outputFormat, setOutputFormat] = useState('');
+  const [constraints, setConstraints] = useState('');
+  const [notes, setNotes] = useState('');
+  const [hints, setHints] = useState('');
+  const [editorial, setEditorial] = useState('');
+  const [referenceLinks, setReferenceLinks] = useState('');
+
+  const [supportedLanguages, setSupportedLanguages] = useState<string[]>(['javascript']);
+  const [starterCode, setStarterCode] = useState<Record<string, string>>({
+    javascript: 'function solve(input) {\n  // Write your solution here\n}\n',
+  });
+
+  const [sampleInput, setSampleInput] = useState('');
+  const [sampleOutput, setSampleOutput] = useState('');
+  const [sampleExplanation, setSampleExplanation] = useState('');
+  const [hiddenInput, setHiddenInput] = useState('');
+  const [hiddenOutput, setHiddenOutput] = useState('');
+  const [hiddenWeight, setHiddenWeight] = useState(1);
+
+  const [timeLimitMs, setTimeLimitMs] = useState(2000);
+  const [memoryLimitMb, setMemoryLimitMb] = useState(256);
+  const [maxCodeSizeKb, setMaxCodeSizeKb] = useState(256);
+  const [executionTimeoutMs, setExecutionTimeoutMs] = useState(5000);
+  const [plagiarismEnabled, setPlagiarismEnabled] = useState(false);
+  const [similarityThreshold, setSimilarityThreshold] = useState(80);
+  const [maxAttempts, setMaxAttempts] = useState('');
+  const [allowLateSubmission, setAllowLateSubmission] = useState(false);
+  const [aiCriteria, setAiCriteria] = useState<string[]>(['Code Readability', 'Best Practices']);
+  const [requiredTech, setRequiredTech] = useState<string[]>(['React']);
+  const [requiredFeatures, setRequiredFeatures] = useState<string[]>(['Responsive Design']);
+  const [requiredFiles, setRequiredFiles] = useState('src/App.jsx');
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState('Application must be responsive and show proper loading/error states.');
+  const [figmaLink, setFigmaLink] = useState('');
+
+  const generatedSlug = useMemo(() => slugify(title), [title]);
+  const isFrontendType = ['frontend', 'react', 'html-css', 'fullstack'].includes(type);
+  const isBackendType = ['backend', 'nodejs', 'fullstack'].includes(type);
+  const isSqlType = type === 'sql';
+  const isMcqType = type === 'mcq';
+  const isSystemDesignType = type === 'system-design';
+
+  const authHeaders = () => {
+    const token = localStorage.getItem('devbattles.token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
+  const fetchDrafts = async () => {
+    setLoadingDrafts(true);
+    try {
+      const res = await fetch('/api/v1/questions?status=draft&limit=50', {
+        headers: authHeaders(),
+      });
+      const json = await res.json().catch(() => null);
+      if (res.ok && json?.success && Array.isArray(json.data?.items)) {
+        setDrafts(json.data.items);
+      }
+    } finally {
+      setLoadingDrafts(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDrafts();
+  }, []);
+
+  const toggle = (value: string, values: string[], setter: (next: string[]) => void) => {
+    setter(values.includes(value) ? values.filter((item) => item !== value) : [...values, value]);
+  };
+
+  const toggleLanguage = (language: string) => {
+    const next = supportedLanguages.includes(language)
+      ? supportedLanguages.filter((item) => item !== language)
+      : [...supportedLanguages, language];
+    setSupportedLanguages(next);
+    setStarterCode((prev) => ({
+      ...prev,
+      ...Object.fromEntries(next.map((lang) => [lang, prev[lang] ?? `// ${lang} starter code\n`])),
+    }));
+  };
+
+  const buildPayload = () => ({
+    title,
+    description: description || 'Question details will be completed by the teacher.',
+    problemStatement: description,
+    inputFormat,
+    outputFormat,
+    notes,
+    type,
+    difficulty,
+    category,
+    tags: csv(tags),
+    topics: csv(topics),
+    technology: isFrontendType ? requiredTech : [],
+    requirements: csv(constraints),
+    constraints: csv(constraints),
+    supportedLanguages,
+    maxScore,
+    visibility,
+    status: 'draft',
+    estimatedMinutes,
+    timeLimitMs,
+    memoryLimitMb,
+    maxCodeSizeKb,
+    executionTimeoutMs,
+    plagiarism: { enabled: plagiarismEnabled, similarityThreshold },
+    submission: {
+      maxAttempts: maxAttempts ? Number(maxAttempts) : null,
+      allowLateSubmission,
+    },
+    scoring: {
+      correctness: 60,
+      performance: 15,
+      aiReview: 10,
+      codeQuality: 10,
+      documentation: 5,
+      bonus: 0,
+    },
+    examples: sampleInput && sampleOutput ? [{ input: sampleInput, output: sampleOutput, explanation: sampleExplanation || null }] : [],
+    starterCode: Object.fromEntries(supportedLanguages.map((lang) => [lang, starterCode[lang] ?? ''])),
+    testCases: [
+      ...(sampleInput && sampleOutput
+        ? [{ input: sampleInput, expectedOutput: sampleOutput, explanation: sampleExplanation || null, isSample: true, isHidden: false, weight: 1 }]
+        : []),
+      ...(hiddenInput && hiddenOutput
+        ? [{ input: hiddenInput, expectedOutput: hiddenOutput, isSample: false, isHidden: true, weight: hiddenWeight }]
+        : []),
+    ],
+    hints: csv(hints),
+    editorial: editorial || null,
+    assets: [
+      ...(figmaLink ? [{ type: 'other', name: 'Figma reference', url: figmaLink }] : []),
+      ...csv(referenceLinks).map((url, index) => ({ type: 'other', name: `Reference ${index + 1}`, url })),
+    ],
+    normalizedRequirements: [
+      ...requiredTech.map((content, index) => ({ type: 'technology', content, sortOrder: index })),
+      ...csv(requiredFiles).map((content, index) => ({ type: 'file', content, sortOrder: index })),
+      ...requiredFeatures.map((content, index) => ({ type: 'feature', content, sortOrder: index })),
+      ...(acceptanceCriteria ? [{ type: 'acceptance_criteria', content: acceptanceCriteria }] : []),
+      ...(isBackendType ? [{ type: 'api', content: 'Define required endpoints, request/response bodies, authentication rules, validation rules, and business logic.' }] : []),
+      ...(isSqlType ? [{ type: 'database', content: 'Provide database schema, sample data, expected query, and hidden validation queries.' }] : []),
+      ...(isMcqType ? [{ type: 'rubric', content: 'Provide options, correct answer, and explanation.' }] : []),
+      ...(isSystemDesignType ? [{ type: 'rubric', content: 'Provide requirements, constraints, expected components, and evaluation rubric.' }] : []),
+    ],
+    aiReviewRules: aiCriteria.map((criterion) => ({ criterion, enabled: true, weight: 1 })),
+    supportedFrameworks: requiredTech,
+    referenceDesigns: figmaLink ? [{ type: 'figma', figmaUrl: figmaLink, description: 'Reference design' }] : [],
+  });
+
+  const handleSaveDraft = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
 
     try {
-      const token = localStorage.getItem('devbattles.token');
       const res = await fetch('/api/v1/questions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...authHeaders(),
         },
-        body: JSON.stringify({
-          title,
-          difficulty,
-          category: category.trim() || 'General',
-          description,
-          type: 'dsa',
-          tags: [],
-          companies: [],
-          technology: [],
-          examples: [],
-          starterCode: {},
-          testCases: [],
-        }),
+        body: JSON.stringify(buildPayload()),
       });
 
       const json = await res.json().catch(() => null);
@@ -46,11 +263,14 @@ export const QuestionBuilderPage: React.FC = () => {
         throw new Error(json?.message || 'Question creation failed.');
       }
 
-      addToast('success', 'Question Draft Created', `"${title}" was saved to the Question Service as a draft.`);
+      addToast('success', 'Question Saved as Draft', 'It is now listed in Teacher Drafts below. Publish it when ready for students.');
       setTitle('');
-      setDifficulty('Medium');
-      setCategory('General');
       setDescription('');
+      setSampleInput('');
+      setSampleOutput('');
+      setHiddenInput('');
+      setHiddenOutput('');
+      await fetchDrafts();
     } catch (err: any) {
       setError(err.message || 'Question creation failed.');
       addToast('error', 'Question Creation Failed', err.message);
@@ -59,78 +279,218 @@ export const QuestionBuilderPage: React.FC = () => {
     }
   };
 
+  const publishDraft = async (questionId: string) => {
+    const res = await fetch(`/api/v1/questions/${questionId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        ...authHeaders(),
+      },
+      body: JSON.stringify({ status: 'published' }),
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || !json?.success) {
+      addToast('error', 'Publish Failed', json?.message || 'Unable to publish this draft.');
+      return;
+    }
+    addToast('success', 'Question Published', 'Students can now see this question in the Question Bank.');
+    await fetchDrafts();
+  };
+
   return (
-    <div className="space-y-8 pb-12 max-w-4xl">
+    <div className="space-y-8 pb-12">
       <div className="pb-6 border-b border-slate-800">
-        <h1 className="text-2xl font-black text-slate-100">Custom Question Builder</h1>
-        <p className="text-xs text-slate-400">Create backend-backed DSA or frontend challenge drafts.</p>
+        <Badge variant="indigo" icon={<Code2 className="w-3.5 h-3.5" />}>Unified Question Builder</Badge>
+        <h1 className="text-2xl font-black text-slate-100 mt-3">Create Question</h1>
+        <p className="text-xs text-slate-400 max-w-3xl">
+          Build reusable questions for practice, homework, contests, assignments, AI challenges, daily challenges, and mock interviews.
+        </p>
       </div>
 
-      <Card className="p-6 space-y-4">
-        <form onSubmit={handleCreate} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1">Question Title</label>
-            <input
-              type="text"
-              required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g., Design a Circular Buffer"
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200"
-            />
-          </div>
+      <div className="flex flex-wrap gap-2">
+        {steps.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            onClick={() => setStep(item.id)}
+            className={`px-3 py-2 rounded-xl text-xs font-bold border flex items-center gap-2 ${
+              step === item.id ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-900 border-slate-800 text-slate-400'
+            }`}
+          >
+            {item.icon} Step {item.id}: {item.label}
+          </button>
+        ))}
+      </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">Difficulty Level</label>
-              <select
-                value={difficulty}
-                onChange={(e) => setDifficulty(e.target.value as typeof difficulty)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200"
-              >
-                <option value="Easy">Easy</option>
-                <option value="Medium">Medium</option>
-                <option value="Hard">Hard</option>
-                <option value="Expert">Expert</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs font-bold text-slate-300 mb-1">Problem Category</label>
-              <input
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Queue Data Structure"
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-slate-300 mb-1">Problem Description</label>
-            <textarea
-              rows={4}
-              required
-              minLength={10}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Detailed description, inputs, constraints, and expected behavior..."
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg p-2.5 text-xs text-slate-200"
-            />
-          </div>
-
-          {error && (
-            <div className="flex items-start gap-2 rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2.5 text-[11px] text-rose-300">
-              <AlertCircle className="w-4 h-4 shrink-0 mt-px" />
-              <span>{error}</span>
+      <form onSubmit={handleSaveDraft} className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <Card className="xl:col-span-2 p-6 space-y-5">
+          {step === 1 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-black text-white">Step 1 — Basic Information</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Title">
+                  <input required value={title} onChange={(e) => setTitle(e.target.value)} className="input" placeholder="Two Sum Variant" />
+                </Field>
+                <Field label="Slug Auto Generated">
+                  <input value={generatedSlug} readOnly className="input opacity-70" />
+                </Field>
+                <Field label="Question Type">
+                  <select value={type} onChange={(e) => setType(e.target.value as ProblemType)} className="input">
+                    {QUESTION_TYPES.map((qt) => <option key={qt.id} value={qt.id}>{qt.label}</option>)}
+                  </select>
+                </Field>
+                <Field label="Difficulty">
+                  <select value={difficulty} onChange={(e) => setDifficulty(e.target.value as Difficulty)} className="input">
+                    {(['Easy', 'Medium', 'Hard', 'Expert'] as const).map((d) => <option key={d}>{d}</option>)}
+                  </select>
+                </Field>
+                <Field label="Category"><input value={category} onChange={(e) => setCategory(e.target.value)} className="input" /></Field>
+                <Field label="Tags comma separated"><input value={tags} onChange={(e) => setTags(e.target.value)} className="input" placeholder="Array, Hash Set" /></Field>
+                <Field label="Topics comma separated"><input value={topics} onChange={(e) => setTopics(e.target.value)} className="input" placeholder="Hashing, Sliding Window" /></Field>
+                <Field label="Estimated Time"><input type="number" value={estimatedMinutes} onChange={(e) => setEstimatedMinutes(Number(e.target.value))} className="input" /></Field>
+                <Field label="Maximum Score"><input type="number" value={maxScore} onChange={(e) => setMaxScore(Number(e.target.value))} className="input" /></Field>
+                <Field label="Visibility">
+                  <select value={visibility} onChange={(e) => setVisibility(e.target.value as typeof visibility)} className="input">
+                    <option value="organization">Organization</option>
+                    <option value="private">Private</option>
+                    <option value="public">Public</option>
+                  </select>
+                </Field>
+              </div>
             </div>
           )}
 
-          <Button type="submit" variant="glow" icon={<Plus className="w-4 h-4" />} isLoading={isSubmitting}>
-            Save Question Draft
-          </Button>
-        </form>
-      </Card>
+          {step === 2 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-black text-white">Step 2 — Problem Statement</h2>
+              <Field label="Markdown Problem Statement"><textarea required minLength={10} rows={7} value={description} onChange={(e) => setDescription(e.target.value)} className="input" /></Field>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Field label="Input Format"><textarea rows={3} value={inputFormat} onChange={(e) => setInputFormat(e.target.value)} className="input" /></Field>
+                <Field label="Output Format"><textarea rows={3} value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} className="input" /></Field>
+                <Field label="Constraints comma separated"><textarea rows={3} value={constraints} onChange={(e) => setConstraints(e.target.value)} className="input" /></Field>
+                <Field label="Notes"><textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} className="input" /></Field>
+                <Field label="Hints comma separated"><textarea rows={3} value={hints} onChange={(e) => setHints(e.target.value)} className="input" /></Field>
+                <Field label="Reference Links comma separated"><textarea rows={3} value={referenceLinks} onChange={(e) => setReferenceLinks(e.target.value)} className="input" /></Field>
+              </div>
+              <Field label="Editorial / Official Explanation"><textarea rows={5} value={editorial} onChange={(e) => setEditorial(e.target.value)} className="input" /></Field>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-black text-white">Step 3 & 4 — Languages and Starter Code</h2>
+              <div className="flex flex-wrap gap-2">
+                {LANGUAGES.map((lang) => (
+                  <button key={lang} type="button" onClick={() => toggleLanguage(lang)} className={`pill ${supportedLanguages.includes(lang) ? 'pillActive' : ''}`}>{lang}</button>
+                ))}
+              </div>
+              {supportedLanguages.map((lang) => (
+                <Field key={lang} label={`${lang} starter code`}>
+                  <textarea rows={7} value={starterCode[lang] ?? ''} onChange={(e) => setStarterCode((prev) => ({ ...prev, [lang]: e.target.value }))} className="input font-mono" />
+                </Field>
+              ))}
+              {isFrontendType && (
+                <Card className="p-4 space-y-3 border-cyan-500/30">
+                  <h3 className="text-sm font-bold text-cyan-300 flex gap-2"><UploadCloud className="w-4 h-4" /> Frontend-Specific Requirements</h3>
+                  <Selector label="Required Technologies" values={FRONTEND_TECH} selected={requiredTech} onToggle={(v) => toggle(v, requiredTech, setRequiredTech)} />
+                  <Selector label="Required Features" values={REQUIRED_FEATURES} selected={requiredFeatures} onToggle={(v) => toggle(v, requiredFeatures, setRequiredFeatures)} />
+                  <Field label="Required files comma separated"><input value={requiredFiles} onChange={(e) => setRequiredFiles(e.target.value)} className="input" /></Field>
+                  <Field label="Acceptance Criteria"><textarea rows={3} value={acceptanceCriteria} onChange={(e) => setAcceptanceCriteria(e.target.value)} className="input" /></Field>
+                  <Field label="Figma / Reference Design Link"><input value={figmaLink} onChange={(e) => setFigmaLink(e.target.value)} className="input" /></Field>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-black text-white">Step 5 — Test Cases</h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Card className="p-4 space-y-3 border-emerald-500/30">
+                  <h3 className="text-sm font-bold text-emerald-300">Sample Test Case — visible to students</h3>
+                  <Field label="Input"><textarea rows={4} value={sampleInput} onChange={(e) => setSampleInput(e.target.value)} className="input" /></Field>
+                  <Field label="Output"><textarea rows={3} value={sampleOutput} onChange={(e) => setSampleOutput(e.target.value)} className="input" /></Field>
+                  <Field label="Explanation"><textarea rows={2} value={sampleExplanation} onChange={(e) => setSampleExplanation(e.target.value)} className="input" /></Field>
+                </Card>
+                <Card className="p-4 space-y-3 border-rose-500/30">
+                  <h3 className="text-sm font-bold text-rose-300">Hidden Test Case — evaluator only</h3>
+                  <Field label="Input"><textarea rows={4} value={hiddenInput} onChange={(e) => setHiddenInput(e.target.value)} className="input" /></Field>
+                  <Field label="Expected Output"><textarea rows={3} value={hiddenOutput} onChange={(e) => setHiddenOutput(e.target.value)} className="input" /></Field>
+                  <Field label="Weight"><input type="number" value={hiddenWeight} onChange={(e) => setHiddenWeight(Number(e.target.value))} className="input" /></Field>
+                </Card>
+              </div>
+            </div>
+          )}
+
+          {step === 5 && (
+            <div className="space-y-4">
+              <h2 className="text-lg font-black text-white">Step 6 — Execution, AI, Plagiarism, Submission and Scoring</h2>
+              <div className="grid md:grid-cols-2 gap-4">
+                <Field label="Time Limit MS"><input type="number" value={timeLimitMs} onChange={(e) => setTimeLimitMs(Number(e.target.value))} className="input" /></Field>
+                <Field label="Memory Limit MB"><input type="number" value={memoryLimitMb} onChange={(e) => setMemoryLimitMb(Number(e.target.value))} className="input" /></Field>
+                <Field label="Maximum Code Size KB"><input type="number" value={maxCodeSizeKb} onChange={(e) => setMaxCodeSizeKb(Number(e.target.value))} className="input" /></Field>
+                <Field label="Execution Timeout MS"><input type="number" value={executionTimeoutMs} onChange={(e) => setExecutionTimeoutMs(Number(e.target.value))} className="input" /></Field>
+                <Field label="Max Attempts blank = unlimited"><input value={maxAttempts} onChange={(e) => setMaxAttempts(e.target.value)} className="input" /></Field>
+                <Field label="Similarity Threshold"><input type="number" value={similarityThreshold} onChange={(e) => setSimilarityThreshold(Number(e.target.value))} className="input" /></Field>
+              </div>
+              <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={plagiarismEnabled} onChange={(e) => setPlagiarismEnabled(e.target.checked)} /> Enable plagiarism detection</label>
+              <label className="flex items-center gap-2 text-xs text-slate-300"><input type="checkbox" checked={allowLateSubmission} onChange={(e) => setAllowLateSubmission(e.target.checked)} /> Allow late submission</label>
+              <Selector label="AI Review Criteria" values={AI_CRITERIA} selected={aiCriteria} onToggle={(v) => toggle(v, aiCriteria, setAiCriteria)} />
+            </div>
+          )}
+
+          {error && <div className="flex gap-2 text-xs text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-lg p-3"><AlertCircle className="w-4 h-4" /> {error}</div>}
+
+          <div className="flex justify-between pt-4 border-t border-slate-800">
+            <Button type="button" variant="secondary" disabled={step === 1} onClick={() => setStep((s) => Math.max(1, s - 1))}>Back</Button>
+            <div className="flex gap-2">
+              {step < 5 && <Button type="button" variant="primary" onClick={() => setStep((s) => Math.min(5, s + 1))}>Next</Button>}
+              <Button type="submit" variant="glow" icon={<Plus className="w-4 h-4" />} isLoading={isSubmitting}>Save Question Draft</Button>
+            </div>
+          </div>
+        </Card>
+
+        <Card className="p-5 space-y-4 h-fit sticky top-24">
+          <h3 className="text-sm font-black text-white">Teacher Drafts</h3>
+          <p className="text-[11px] text-slate-400">Draft questions are visible here. Publish to make them visible in the Student Question Bank.</p>
+          {loadingDrafts ? <p className="text-xs text-slate-500">Loading drafts...</p> : drafts.length === 0 ? (
+            <p className="text-xs text-slate-500">No draft questions yet.</p>
+          ) : (
+            <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
+              {drafts.map((draft) => (
+                <div key={draft.id} className="p-3 rounded-xl border border-slate-800 bg-slate-950 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="text-xs font-bold text-slate-200">{draft.title}</p>
+                      <p className="text-[10px] text-slate-500">{draft.type} · {draft.difficulty} · {draft.category}</p>
+                    </div>
+                    <Badge variant="amber">DRAFT</Badge>
+                  </div>
+                  <Button size="sm" variant="primary" className="w-full" onClick={() => publishDraft(draft.id)}>Publish to Students</Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </Card>
+      </form>
     </div>
   );
 };
+
+const Field: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <label className="block space-y-1">
+    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+    {children}
+  </label>
+);
+
+const Selector: React.FC<{ label: string; values: string[]; selected: string[]; onToggle: (value: string) => void }> = ({ label, values, selected, onToggle }) => (
+  <div className="space-y-2">
+    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">{label}</p>
+    <div className="flex flex-wrap gap-2">
+      {values.map((value) => (
+        <button key={value} type="button" onClick={() => onToggle(value)} className={`pill ${selected.includes(value) ? 'pillActive' : ''}`}>{value}</button>
+      ))}
+    </div>
+  </div>
+);

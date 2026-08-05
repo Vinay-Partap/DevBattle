@@ -159,6 +159,43 @@ html, body, #root {
   animation: aurora-move 25s ease-in-out infinite 2s;
 }
 
+.input {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid rgb(30 41 59);
+  background: rgb(15 23 42);
+  padding: 0.625rem 0.75rem;
+  font-size: 0.75rem;
+  color: rgb(226 232 240);
+  outline: none;
+}
+
+.input:focus {
+  border-color: rgb(99 102 241);
+}
+
+.pill {
+  border-radius: 9999px;
+  border: 1px solid rgb(30 41 59);
+  background: rgb(2 6 23);
+  padding: 0.375rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: rgb(148 163 184);
+  transition: all 0.15s ease;
+}
+
+.pill:hover {
+  color: rgb(226 232 240);
+  border-color: rgb(71 85 105);
+}
+
+.pillActive {
+  border-color: rgba(99, 102, 241, 0.65);
+  background: rgba(79, 70, 229, 0.25);
+  color: rgb(199 210 254);
+}
+
 /* Monaco Editor Container helper */
 .monaco-editor-wrapper {
   height: 100%;
