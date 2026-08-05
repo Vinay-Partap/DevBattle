@@ -2,15 +2,16 @@
 // User Repository with JSON Fallback
 // ===========================================
 
-import { eq } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
+
+import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
 import db from '../config/db.config.js';
 import { users } from '../database/schema.js';
 
-const FALLBACK_DIR = '/home/user/DevBattle/database-fallback';
+const FALLBACK_DIR = path.join(process.cwd(), 'tmp', 'database-fallback');
 const FALLBACK_FILE = path.join(FALLBACK_DIR, 'auth_users.json');
 
 const loadFallback = () => {
@@ -19,41 +20,8 @@ const loadFallback = () => {
       fs.mkdirSync(FALLBACK_DIR, { recursive: true });
     }
     if (!fs.existsSync(FALLBACK_FILE)) {
-      // Seed default accounts
-      const defaultUsers = [
-        {
-          id: '11111111-1111-4111-8111-111111111111',
-          name: 'Sarah Connor',
-          email: 'admin@devbattles.io',
-          passwordHash: '$2a$12$L7R66lA5.h4g2bW3e1gU0eYv58R.9m9u7g.KzD7K2C6ZkY4f7fS6q', // admin123
-          role: 'admin',
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '22222222-2222-4222-8222-222222222222',
-          name: 'Aarav Patel',
-          email: 'aarav.patel@krmangalam.edu.in',
-          passwordHash: '$2a$12$K1R22tA5.h4g2bW3e1gU0ePv58R.9m9u7g.KzD7K2C6ZkY4f7fS6q', // password123
-          role: 'student',
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        },
-        {
-          id: '33333333-3333-4333-8333-333333333333',
-          name: 'Prof. Rajesh Sharma',
-          passwordHash: '$2a$12$K1R22tA5.h4g2bW3e1gU0ePv58R.9m9u7g.KzD7K2C6ZkY4f7fS6q', // password123
-          email: 'rajesh.sharma@krmangalam.edu.in',
-          role: 'mentor',
-          isVerified: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-      ];
-      fs.writeFileSync(FALLBACK_FILE, JSON.stringify(defaultUsers, null, 2), 'utf8');
-      return defaultUsers;
+      fs.writeFileSync(FALLBACK_FILE, JSON.stringify([], null, 2), 'utf8');
+      return [];
     }
     const content = fs.readFileSync(FALLBACK_FILE, 'utf8');
     return JSON.parse(content);
@@ -173,6 +141,7 @@ class UserRepository {
           email: data.email,
           passwordHash: data.passwordHash,
           role: data.role || 'student',
+          isActive: data.isActive ?? false,
           isVerified: data.isVerified || false,
           verificationToken: data.verificationToken || null,
           verificationTokenExpiry: data.verificationTokenExpiry || null,
@@ -187,6 +156,7 @@ class UserRepository {
         email: data.email,
         passwordHash: data.passwordHash,
         role: data.role || 'student',
+        isActive: data.isActive ?? false,
         isVerified: data.isVerified || false,
         verificationToken: data.verificationToken || null,
         verificationTokenExpiry: data.verificationTokenExpiry ? new Date(data.verificationTokenExpiry).toISOString() : null,

@@ -1,22 +1,57 @@
 # DevBattle platform orchestration (root).
-# The User Microservice lives in ./user-service.
-# Run `docker compose up` to bring up PostgreSQL + the User Service together.
+# Starts the currently implemented backend services with isolated databases.
 
 services:
-  postgres:
+  auth-db:
     image: postgres:16-alpine
-    container_name: devbattle-postgres
+    container_name: devbattle-auth-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: devbattle
+      POSTGRES_DB: devbattle_auth
     ports:
       - '5432:5432'
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - auth_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U postgres -d devbattle']
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d devbattle_auth']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  user-db:
+    image: postgres:16-alpine
+    container_name: devbattle-user-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devbattle_user
+    ports:
+      - '5433:5432'
+    volumes:
+      - user_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d devbattle_user']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  question-db:
+    image: postgres:16-alpine
+    container_name: devbattle-question-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: devbattle_question
+    ports:
+      - '5434:5432'
+    volumes:
+      - question_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d devbattle_question']
       interval: 10s
       timeout: 5s
       retries: 5
@@ -28,24 +63,96 @@ services:
     container_name: devbattle-user-service
     restart: unless-stopped
     depends_on:
-      postgres:
+      user-db:
         condition: service_healthy
     environment:
       NODE_ENV: production
       PORT: 4001
-      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/devbattle
+      DATABASE_URL: postgresql://postgres:postgres@user-db:5432/devbattle_user
       JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-devbattle-shared-jwt-secret}
       JWT_ISSUER: devbattle-auth-service
       JWT_AUDIENCE: devbattle-client
       INTERNAL_API_KEY: ${INTERNAL_API_KEY:-internal-service-token-change-me}
+      AUTH_SERVICE_URL: http://auth-service:4000
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
     ports:
       - '4001:4001'
+    command: sh -c "node dist/database/migrate.js && node dist/database/seed.js && node dist/server.js"
     healthcheck:
       test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4001/api/v1/health']
       interval: 15s
       timeout: 5s
       retries: 5
 
+  question-service:
+    build:
+      context: ./question-service
+      dockerfile: Dockerfile
+    container_name: devbattle-question-service
+    restart: unless-stopped
+    depends_on:
+      question-db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4002
+      DATABASE_URL: postgresql://postgres:postgres@question-db:5432/devbattle_question
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-devbattle-shared-jwt-secret}
+      JWT_ISSUER: devbattle-auth-service
+      JWT_AUDIENCE: devbattle-client
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-internal-service-token-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+    ports:
+      - '4002:4002'
+    command: sh -c "node dist/database/migrate.js && node dist/database/seed.js && node dist/server.js"
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4002/api/v1/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: devbattle-auth-service
+    restart: unless-stopped
+    depends_on:
+      auth-db:
+        condition: service_healthy
+      user-service:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+      API_PREFIX: /api/v1
+      DATABASE_URL: postgresql://postgres:postgres@auth-db:5432/devbattle_auth
+      JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:-devbattle-shared-jwt-secret}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-refresh-secret-change-me}
+      USER_SERVICE_URL: http://user-service:4001
+      INTERNAL_API_KEY: ${INTERNAL_API_KEY:-internal-service-token-change-me}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
+      CORS_CREDENTIALS: 'true'
+      COOKIE_SECRET: ${COOKIE_SECRET:-local-cookie-secret-change-me}
+      COOKIE_SECURE: 'false'
+      COOKIE_SAME_SITE: lax
+      SMTP_HOST: ${SMTP_HOST:-smtp.local}
+      SMTP_USER: ${SMTP_USER:-local-dev-user}
+      SMTP_PASS: ${SMTP_PASS:-local-dev-pass}
+      CLIENT_URL: ${CLIENT_URL:-http://localhost:5173}
+      RESET_PASSWORD_URL: ${RESET_PASSWORD_URL:-http://localhost:5173/reset-password}
+      VERIFY_EMAIL_URL: ${VERIFY_EMAIL_URL:-http://localhost:5173/email-verification}
+      LOG_LEVEL: info
+    ports:
+      - '4000:4000'
+    command: sh -c "npm run db:migrate && npm run db:seed && npm start"
+    healthcheck:
+      test: ['CMD', 'wget', '--spider', '-q', 'http://localhost:4000/health']
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
 volumes:
-  pgdata:
+  auth_pgdata:
+  user_pgdata:
+  question_pgdata:

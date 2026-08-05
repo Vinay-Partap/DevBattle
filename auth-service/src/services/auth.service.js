@@ -14,8 +14,10 @@ import { sanitizeUser } from '../utils/response.helper.js';
 import { setRefreshTokenCookie, clearRefreshTokenCookie } from '../utils/cookie.helper.js';
 import { logger } from '../utils/logger.js';
 import {
+  AppError,
   ConflictError,
   UnauthorizedError,
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from '../utils/errors.js';
@@ -55,45 +57,29 @@ class AuthService {
     const hashedVerificationToken = hashToken(verificationToken);
     const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
-    // Create the user
+    // Create the auth account as inactive. The User Service profile is provisioned
+    // with the same pending status; an administrator must approve it before login.
     const user = await userRepository.create({
       name,
       email,
       passwordHash,
       role: role || 'student',
+      isActive: false,
       verificationToken: hashedVerificationToken,
       verificationTokenExpiry,
     });
 
-    // Provision profile in User Service (non-blocking, logged appropriately)
-    try {
-      const nameParts = name.trim().split(/\s+/);
-      const firstName = nameParts[0] || '';
-      const lastName = nameParts.slice(1).join(' ') || '';
-
-      const userSvcRes = await fetch(`${env.USER_SERVICE_URL}/api/v1/internal/users`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-internal-api-key': env.INTERNAL_API_KEY,
-        },
-        body: JSON.stringify({
-          authUserId: user.id,
-          email: user.email,
-          firstName,
-          lastName,
-          role: user.role,
-        }),
-      });
-
-      if (!userSvcRes.ok) {
-        const errText = await userSvcRes.text();
-        logger.error(`Failed to provision user profile in User Service. Status: ${userSvcRes.status}, Error: ${errText}`);
-      } else {
-        logger.info(`Successfully provisioned user profile in User Service for user: ${user.id}`);
+    // Provision profile in User Service synchronously in integrated environments.
+    // If provisioning fails, roll back the auth record so the two services cannot drift.
+    if (env.NODE_ENV !== 'test') {
+      try {
+        await this.provisionUserProfile(user, name);
+      } catch (err) {
+        await userRepository.delete(user.id).catch((deleteErr) => {
+          logger.error('Failed to roll back auth user after profile provisioning failure:', deleteErr);
+        });
+        throw err;
       }
-    } catch (err) {
-      logger.error('Error calling User Service to provision profile:', err);
     }
 
     // Send verification email (non-blocking)
@@ -117,6 +103,38 @@ class AuthService {
    * @param {import('express').Response} res - Express response (for setting cookies)
    * @returns {Promise<Object>} Login result with tokens
    */
+  async provisionUserProfile(user, name) {
+    const nameParts = name.trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+
+    const userSvcRes = await fetch(`${env.USER_SERVICE_URL}/api/v1/internal/users`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-internal-api-key': env.INTERNAL_API_KEY,
+      },
+      body: JSON.stringify({
+        authUserId: user.id,
+        email: user.email,
+        firstName,
+        lastName,
+        role: user.role,
+        isActive: false,
+      }),
+    });
+
+    if (!userSvcRes.ok) {
+      const errText = await userSvcRes.text();
+      logger.error(
+        `Failed to provision user profile in User Service. Status: ${userSvcRes.status}, Error: ${errText}`,
+      );
+      throw new AppError('Failed to provision user profile. Please try again later.', 502);
+    }
+
+    logger.info(`Successfully provisioned user profile in User Service for user: ${user.id}`);
+  }
+
   async login(data, res) {
     const { email, password } = data;
 
@@ -130,6 +148,10 @@ class AuthService {
     const isPasswordValid = await comparePassword(password, user.passwordHash);
     if (!isPasswordValid) {
       throw new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS);
+    }
+
+    if (user.isActive === false) {
+      throw new ForbiddenError(ERROR_MESSAGES.ACCOUNT_PENDING);
     }
 
     // Generate tokens
@@ -414,6 +436,36 @@ class AuthService {
    * @param {string} email - User's email
    * @returns {Promise<Object>}
    */
+  async updateInternalRole(userId, role) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND);
+    }
+
+    const updated = await userRepository.update(userId, { role });
+    logger.info(`Auth role synchronized for user ${userId}: ${role}`);
+
+    return {
+      message: 'Auth user role synchronized successfully.',
+      user: sanitizeUser(updated),
+    };
+  }
+
+  async updateInternalStatus(userId, isActive) {
+    const user = await userRepository.findById(userId);
+    if (!user) {
+      throw new NotFoundError(ERROR_MESSAGES.NOT_FOUND);
+    }
+
+    const updated = await userRepository.update(userId, { isActive });
+    logger.info(`Auth status synchronized for user ${userId}: ${isActive ? 'active' : 'inactive'}`);
+
+    return {
+      message: 'Auth user status synchronized successfully.',
+      user: sanitizeUser(updated),
+    };
+  }
+
   async resendVerificationEmail(email) {
     const user = await userRepository.findByEmail(email);
 

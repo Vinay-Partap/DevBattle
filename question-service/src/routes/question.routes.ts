@@ -52,13 +52,13 @@ router.post(
   '/:id/bookmark',
   authenticate,
   validate({ params: questionIdParamSchema }),
-  asyncHandler(questionController.toggleBookmark),
+  asyncHandler(questionController.addBookmark),
 );
 router.delete(
   '/:id/bookmark',
   authenticate,
   validate({ params: questionIdParamSchema }),
-  asyncHandler(questionController.toggleBookmark),
+  asyncHandler(questionController.removeBookmark),
 );
 
 // Authoring (mentors & admins)

@@ -16,6 +16,7 @@ export const users = pgTable(
     email: varchar('email', { length: 255 }).notNull().unique(),
     passwordHash: text('password_hash').notNull(),
     role: varchar('role', { length: 50 }).notNull().default('student'),
+    isActive: boolean('is_active').notNull().default(false),
     isVerified: boolean('is_verified').notNull().default(false),
     verificationToken: text('verification_token'),
     verificationTokenExpiry: timestamp('verification_token_expiry', { withTimezone: true }),

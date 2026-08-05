@@ -12,8 +12,16 @@ interface ProtectedRouteProps {
 
 /** Blocks unauthenticated visitors and sends users to their own workspace on role mismatch. */
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allow, children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, authLoading } = useAuth();
   const location = useLocation();
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center text-sm">
+        Restoring your secure session...
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
@@ -28,7 +36,14 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ allow, children 
 
 /** Keeps signed-in users away from the login / register screens. */
 export const PublicOnlyRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, authLoading } = useAuth();
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 text-slate-300 flex items-center justify-center text-sm">
+        Restoring your secure session...
+      </div>
+    );
+  }
   if (currentUser) return <Navigate to={roleHome(currentUser.role)} replace />;
   return <>{children}</>;
 };

@@ -93,6 +93,7 @@ const run = async (): Promise<void> => {
       firstName: demo.firstName,
       lastName: demo.lastName,
       role: demo.role,
+      isActive: true,
     });
     if (demo.skills) await userRepository.replaceSkills(profile.id, demo.skills);
     if (demo.education) await userRepository.replaceEducation(profile.id, demo.education);

@@ -49,7 +49,7 @@ const router = Router();
  *                 example: "P@ssw0rd!"
  *               role:
  *                 type: string
- *                 enum: [student, mentor, admin]
+ *                 enum: [student, mentor]
  *                 default: student
  *     responses:
  *       201:

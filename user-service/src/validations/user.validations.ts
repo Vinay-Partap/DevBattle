@@ -103,6 +103,7 @@ export const provisionUserSchema = z.object({
   firstName: z.string().max(100).optional(),
   lastName: z.string().max(100).optional(),
   role: z.enum([Role.STUDENT, Role.MENTOR, Role.ADMIN]).optional(),
+  isActive: z.boolean().optional().default(false),
 });
 
 export type UpdateProfileInput = z.infer<typeof updateProfileSchema>;

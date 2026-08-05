@@ -1,14 +1,39 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { ArrowUpRight, Bookmark, CheckCircle2, Clock, Code2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { Question } from '../../types';
+import { apiFetch } from '../../utils/api';
 import { Card } from '../ui/Card';
 import { Badge, DifficultyBadge } from '../ui/Badge';
 import { Button } from '../ui/Button';
 
-export const QuestionCard: React.FC<{ question: Question }> = ({ question }) => {
+interface QuestionCardProps {
+  question: Question;
+  onBookmarkChange?: (questionId: string, bookmarked: boolean) => void;
+}
+
+export const QuestionCard: React.FC<QuestionCardProps> = ({ question, onBookmarkChange }) => {
   const navigate = useNavigate();
+  const [isBookmarking, setIsBookmarking] = useState(false);
+  const isBookmarked = Boolean(question.isBookmarked);
+
+  const handleBookmark = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    if (isBookmarking) return;
+
+    setIsBookmarking(true);
+    try {
+      await apiFetch<{ bookmarked: boolean }>(`/api/v1/questions/${question.id}/bookmark`, {
+        method: isBookmarked ? 'DELETE' : 'POST',
+      });
+      onBookmarkChange?.(question.id, !isBookmarked);
+    } catch (err) {
+      console.error('Failed to update bookmark:', err);
+    } finally {
+      setIsBookmarking(false);
+    }
+  };
 
   return (
     <Card hoverElevate glow className="flex flex-col justify-between h-full group">
@@ -25,8 +50,14 @@ export const QuestionCard: React.FC<{ question: Question }> = ({ question }) => 
               <p className="text-xs text-slate-400">{question.category}</p>
             </div>
           </div>
-          <button className="text-slate-500 hover:text-amber-400 transition-colors p-1">
-            <Bookmark className={`w-4 h-4 ${question.isBookmarked ? 'fill-amber-400 text-amber-400' : ''}`} />
+          <button
+            type="button"
+            onClick={handleBookmark}
+            disabled={isBookmarking}
+            className="text-slate-500 hover:text-amber-400 transition-colors p-1 disabled:opacity-50"
+            aria-label={isBookmarked ? 'Remove bookmark' : 'Add bookmark'}
+          >
+            <Bookmark className={`w-4 h-4 ${isBookmarked ? 'fill-amber-400 text-amber-400' : ''}`} />
           </button>
         </div>
 

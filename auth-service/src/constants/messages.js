@@ -4,7 +4,7 @@
 
 export const SUCCESS_MESSAGES = {
   // Auth
-  REGISTER_SUCCESS: 'Registration successful. Please verify your email to activate your account.',
+  REGISTER_SUCCESS: 'Registration submitted successfully. Your profile is pending administrator approval.',
   LOGIN_SUCCESS: 'Login successful.',
   LOGOUT_SUCCESS: 'Logout successful.',
   TOKEN_REFRESHED: 'Access token refreshed successfully.',
@@ -40,6 +40,7 @@ export const ERROR_MESSAGES = {
   REFRESH_TOKEN_INVALID: 'Invalid refresh token.',
   REFRESH_TOKEN_REVOKED: 'Refresh token has been revoked.',
   ACCOUNT_NOT_VERIFIED: 'Account is not verified. Please verify your email.',
+  ACCOUNT_PENDING: 'Account is pending administrator approval.',
   ACCOUNT_DISABLED: 'Account has been disabled.',
 
   // Password

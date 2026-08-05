@@ -155,12 +155,20 @@ export class QuestionService {
     return { bookmarked: true };
   }
 
-  async addBookmark(questionId: string, requester: Requester): Promise<void> {
+  async addBookmark(questionId: string, requester: Requester): Promise<{ bookmarked: boolean }> {
+    const question = await this.repository.findById(questionId, requester.id);
+    if (!question) throw ApiError.notFound(Messages.QUESTION_NOT_FOUND, 'QUESTION_NOT_FOUND');
+    if (!isStaff(requester) && question.status !== 'published') {
+      throw ApiError.notFound(Messages.QUESTION_NOT_FOUND, 'QUESTION_NOT_FOUND');
+    }
+
     await this.repository.addBookmark(requester.id, questionId);
+    return { bookmarked: true };
   }
 
-  async removeBookmark(questionId: string, requester: Requester): Promise<void> {
+  async removeBookmark(questionId: string, requester: Requester): Promise<{ bookmarked: boolean }> {
     await this.repository.removeBookmark(requester.id, questionId);
+    return { bookmarked: false };
   }
 
   /* ----------------------------- Admin --------------------------------- */

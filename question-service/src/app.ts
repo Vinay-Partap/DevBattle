@@ -4,6 +4,7 @@ import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
+import rateLimit from 'express-rate-limit';
 import swaggerUi from 'swagger-ui-express';
 
 import { config } from './config/env';
@@ -31,6 +32,14 @@ export const createApp = (): Application => {
   );
   app.use(compression());
   app.use(cookieParser());
+  app.use(
+    rateLimit({
+      windowMs: config.rateLimit.windowMs,
+      max: config.rateLimit.max,
+      standardHeaders: true,
+      legacyHeaders: false,
+    }),
+  );
 
   // HTTP request logging -> Winston
   if (!config.isTest) {

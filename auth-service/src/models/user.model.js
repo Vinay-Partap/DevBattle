@@ -9,6 +9,7 @@
  * @property {string} email - Unique email address
  * @property {string} passwordHash - Bcrypt hashed password
  * @property {'student'|'mentor'|'admin'} role - User role
+ * @property {boolean} isActive - Admin/account activation status
  * @property {boolean} isVerified - Email verification status
  * @property {string|null} verificationToken - Email verification token
  * @property {Date|null} verificationTokenExpiry - Verification token expiry

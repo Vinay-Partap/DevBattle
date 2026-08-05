@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Code2,
@@ -24,11 +24,32 @@ import { Button } from '../../components/ui/Button';
 import { QuestionCard } from '../../components/domain/QuestionCard';
 import { HomeworkCard } from '../../components/domain/HomeworkCard';
 import { ContestCard } from '../../components/domain/ContestCard';
-import { mockQuestions, mockHomework, mockContests, mockSubmissions } from '../../data/mockData';
+import { mockHomework, mockContests, mockSubmissions } from '../../data/mockData';
+import { Question } from '../../types';
 
 export const StudentDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
+  const [recommendedQuestion, setRecommendedQuestion] = useState<Question | null>(null);
+
+  useEffect(() => {
+    const loadRecommendedQuestion = async () => {
+      try {
+        const token = localStorage.getItem('devbattles.token');
+        const res = await fetch('/api/v1/questions?limit=1', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const json = await res.json().catch(() => null);
+        if (res.ok && json?.success && Array.isArray(json.data?.items)) {
+          setRecommendedQuestion(json.data.items[0] ?? null);
+        }
+      } catch (err) {
+        console.error('Failed to load recommended question:', err);
+      }
+    };
+
+    loadRecommendedQuestion();
+  }, []);
 
   if (!currentUser) return null;
 
@@ -80,7 +101,7 @@ export const StudentDashboard: React.FC = () => {
             <Button
               variant="glow"
               icon={<Play className="w-4 h-4" />}
-              onClick={() => navigate('/workspace/q-101')}
+              onClick={() => navigate(recommendedQuestion ? `/workspace/${recommendedQuestion.id}` : '/questions')}
             >
               Continue Learning
             </Button>
@@ -194,7 +215,13 @@ export const StudentDashboard: React.FC = () => {
               Explore Bank
             </button>
           </div>
-          <QuestionCard question={mockQuestions[1]} />
+          {recommendedQuestion ? (
+            <QuestionCard question={recommendedQuestion} />
+          ) : (
+            <Card className="p-6 text-sm text-slate-400">
+              No published questions are available yet. Ask a mentor to publish a question draft.
+            </Card>
+          )}
         </div>
       </div>
 

@@ -25,12 +25,12 @@ const env = {
   // CORS
   CORS_ORIGIN: process.env.CORS_ORIGIN
     ? process.env.CORS_ORIGIN.split(',').map((origin) => origin.trim())
-    : ['http://localhost:3000'],
+    : ['http://localhost:5173', 'http://localhost:3000'],
   CORS_CREDENTIALS: process.env.CORS_CREDENTIALS === 'true',
 
   // Cookies
   COOKIE_SECRET: process.env.COOKIE_SECRET || 'cookie-secret-change-me',
-  COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || 'localhost',
+  COOKIE_DOMAIN: process.env.COOKIE_DOMAIN || undefined,
   COOKIE_SECURE: process.env.COOKIE_SECURE === 'true',
   COOKIE_SAME_SITE: process.env.COOKIE_SAME_SITE || 'lax',
 

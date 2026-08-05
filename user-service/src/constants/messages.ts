@@ -23,6 +23,7 @@ export const Messages = {
   USER_BLOCKED: 'User blocked successfully.',
   USER_ACTIVATED: 'User activated successfully.',
   ROLE_UPDATED: 'User role updated successfully.',
+  AUTH_SYNC_FAILED: 'User profile changed locally but failed to synchronize with the Auth Service.',
 
   // Avatar
   AVATAR_UPLOADED: 'Avatar uploaded successfully.',

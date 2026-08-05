@@ -151,7 +151,17 @@ export const QuestionBankPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedQuestions.map((question) => (
-            <QuestionCard key={question.id} question={question} />
+            <QuestionCard
+              key={question.id}
+              question={question}
+              onBookmarkChange={(questionId, bookmarked) =>
+                setQuestionsList((prev) =>
+                  prev
+                    .map((item) => (item.id === questionId ? { ...item, isBookmarked: bookmarked } : item))
+                    .filter((item) => (onlyBookmarked ? item.isBookmarked : true)),
+                )
+              }
+            />
           ))}
         </div>
       )}

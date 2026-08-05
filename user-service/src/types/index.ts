@@ -74,6 +74,7 @@ export interface CreateUserDto {
   firstName?: string;
   lastName?: string;
   role?: Role;
+  isActive?: boolean;
 }
 
 export interface UpdateProfileDto {

@@ -55,9 +55,14 @@ export const questionController = {
     ok(res, Messages.BOOKMARKS_LISTED, result);
   },
 
-  toggleBookmark: async (req: Request, res: Response): Promise<void> => {
-    const result = await questionService.toggleBookmark(req.params.id, req.user!);
-    ok(res, result.bookmarked ? Messages.BOOKMARK_ADDED : Messages.BOOKMARK_REMOVED, result);
+  addBookmark: async (req: Request, res: Response): Promise<void> => {
+    const result = await questionService.addBookmark(req.params.id, req.user!);
+    ok(res, Messages.BOOKMARK_ADDED, result);
+  },
+
+  removeBookmark: async (req: Request, res: Response): Promise<void> => {
+    const result = await questionService.removeBookmark(req.params.id, req.user!);
+    ok(res, Messages.BOOKMARK_REMOVED, result);
   },
 
   statistics: async (_req: Request, res: Response): Promise<void> => {

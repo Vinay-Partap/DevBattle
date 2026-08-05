@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import Editor from '@monaco-editor/react';
@@ -32,37 +32,83 @@ import { Button } from '../components/ui/Button';
 import { Badge, DifficultyBadge } from '../components/ui/Badge';
 import { Tabs } from '../components/ui/Tabs';
 import { useToast } from '../context/ToastContext';
-import { mockQuestions } from '../data/mockData';
+import { Question } from '../types';
 
 export const CodingWorkspacePage: React.FC = () => {
   const { problemId } = useParams<{ problemId: string }>();
   const navigate = useNavigate();
   const { addToast } = useToast();
 
-  const question = mockQuestions.find((q) => q.id === problemId) || mockQuestions[0];
-  const isFrontend = question.type === 'frontend';
-
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [isLoadingQuestion, setIsLoadingQuestion] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [language, setLanguage] = useState('typescript');
-  const [code, setCode] = useState(
-    question.starterCode[language] || question.starterCode['javascript'] || '// Start coding here'
-  );
+  const [code, setCode] = useState('// Loading starter code...');
   const [activeLeftTab, setActiveLeftTab] = useState('description');
   const [activeBottomTab, setActiveBottomTab] = useState('testcases');
-  const [activeRightTab, setActiveRightTab] = useState(isFrontend ? 'preview' : 'ai-hints');
+  const [activeRightTab, setActiveRightTab] = useState('ai-hints');
   const [viewportMode, setViewportMode] = useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [isRunning, setIsRunning] = useState(false);
   const [testResults, setTestCases] = useState<any[]>([]);
   const [runtime, setRuntime] = useState<number | null>(null);
   const [memory, setMemory] = useState<number | null>(null);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchQuestion = async () => {
+      if (!problemId) {
+        setLoadError('No question was selected.');
+        setIsLoadingQuestion(false);
+        return;
+      }
+
+      setIsLoadingQuestion(true);
+      setLoadError('');
+      try {
+        const token = localStorage.getItem('devbattles.token');
+        const res = await fetch(`/api/v1/questions/${problemId}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success || !json.data) {
+          throw new Error(json?.message || 'Unable to load question.');
+        }
+
+        if (!cancelled) {
+          const loadedQuestion = json.data as Question;
+          setQuestion(loadedQuestion);
+          const preferredLanguage = loadedQuestion.starterCode?.typescript
+            ? 'typescript'
+            : Object.keys(loadedQuestion.starterCode || {})[0] || 'javascript';
+          setLanguage(preferredLanguage);
+          setCode(loadedQuestion.starterCode?.[preferredLanguage] || '// Start coding here');
+          setActiveRightTab(loadedQuestion.type === 'frontend' ? 'preview' : 'ai-hints');
+        }
+      } catch (err: any) {
+        if (!cancelled) setLoadError(err.message || 'Unable to load question.');
+      } finally {
+        if (!cancelled) setIsLoadingQuestion(false);
+      }
+    };
+
+    fetchQuestion();
+    return () => {
+      cancelled = true;
+    };
+  }, [problemId]);
+
+  const isFrontend = question?.type === 'frontend';
+
   const handleLanguageChange = (lang: string) => {
     setLanguage(lang);
-    if (question.starterCode[lang]) {
+    if (question?.starterCode?.[lang]) {
       setCode(question.starterCode[lang]);
     }
   };
 
   const handleRunCode = () => {
+    if (!question) return;
     setIsRunning(true);
     setTimeout(() => {
       setIsRunning(false);
@@ -77,13 +123,35 @@ export const CodingWorkspacePage: React.FC = () => {
   };
 
   const handleSubmitCode = () => {
+    if (!question) return;
     setIsRunning(true);
     setTimeout(() => {
       setIsRunning(false);
-      addToast('success', 'Solution Accepted! 🎉', '+250 XP Awarded. AI Review generated.');
-      navigate('/ai-reviews');
+      addToast('success', 'Submission Captured', 'Submission Service is not implemented yet, so this run is recorded locally only.');
+      navigate('/submissions');
     }, 1500);
   };
+
+  if (isLoadingQuestion) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 text-slate-300 flex items-center justify-center text-sm">
+        Loading question from Question Service...
+      </div>
+    );
+  }
+
+  if (!question) {
+    return (
+      <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <AlertTriangle className="w-10 h-10 text-rose-400" />
+        <div>
+          <h1 className="text-xl font-black">Question unavailable</h1>
+          <p className="text-sm text-slate-400 mt-1">{loadError || 'The selected question could not be loaded.'}</p>
+        </div>
+        <Button variant="secondary" onClick={() => navigate('/questions')}>Back to Question Bank</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-slate-950 text-slate-100 flex flex-col overflow-hidden select-none">

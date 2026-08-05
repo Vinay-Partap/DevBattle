@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Terminal, Lock, Mail, ArrowRight, AlertCircle, Sparkles } from 'lucide-react';
+import { Terminal, Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
-import { DEMO_ACCOUNTS, useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { roleHome } from '../../utils/roles';
 
@@ -38,12 +38,6 @@ export const LoginPage: React.FC = () => {
 
     const home = roleHome(result.user.role);
     navigate(redirectTo && redirectTo !== '/login' ? redirectTo : home, { replace: true });
-  };
-
-  const fillDemo = (demoEmail: string, demoPassword: string) => {
-    setEmail(demoEmail);
-    setPassword(demoPassword);
-    setError('');
   };
 
   return (
@@ -113,27 +107,9 @@ export const LoginPage: React.FC = () => {
           </Button>
         </form>
 
-        {/* Demo credentials - remove once the real identity backend is connected */}
-        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 space-y-2">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300">
-            <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
-            Demo accounts (click to autofill)
-          </p>
-          <div className="grid gap-1.5">
-            {DEMO_ACCOUNTS.map((acc) => (
-              <button
-                key={acc.email}
-                type="button"
-                onClick={() => fillDemo(acc.email, acc.password)}
-                className="w-full text-left px-2.5 py-1.5 rounded-lg border border-slate-800 bg-slate-950 hover:border-indigo-500/50 hover:bg-slate-900 transition-colors"
-              >
-                <span className="block text-[11px] font-bold text-slate-200">{acc.label}</span>
-                <span className="block text-[10px] text-slate-500 truncate">
-                  {acc.email} · {acc.password}
-                </span>
-              </button>
-            ))}
-          </div>
+        <div className="rounded-xl border border-slate-800 bg-slate-900/60 p-3 text-[11px] text-slate-400 leading-relaxed">
+          Use a real account created through the registration flow and approved by an administrator.
+          Seeded development accounts are documented in the service seed scripts, not exposed in the browser.
         </div>
 
         <div className="text-center text-xs text-slate-400 pt-2 border-t border-slate-800">

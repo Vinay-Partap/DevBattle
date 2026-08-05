@@ -41,10 +41,18 @@ const nameSchema = z
   .trim();
 
 /**
- * Role validation schema.
+ * Role validation schema. Public registration intentionally excludes `admin` to
+ * prevent privilege escalation through the unauthenticated API.
  */
 const roleSchema = z.enum(ALL_ROLES, {
   errorMap: () => ({ message: `Role must be one of: ${ALL_ROLES.join(', ')}` }),
+});
+
+const publicRegistrationRoles = [ROLES.STUDENT, ROLES.MENTOR];
+const publicRegisterRoleSchema = z.enum(publicRegistrationRoles, {
+  errorMap: () => ({
+    message: `Role must be one of: ${publicRegistrationRoles.join(', ')}`,
+  }),
 });
 
 /**
@@ -54,7 +62,7 @@ export const registerSchema = z.object({
   name: nameSchema,
   email: emailSchema,
   password: passwordSchema,
-  role: roleSchema.optional().default(ROLES.STUDENT),
+  role: publicRegisterRoleSchema.optional().default(ROLES.STUDENT),
 });
 
 /**
@@ -126,4 +134,12 @@ export const refreshTokenSchema = z.object({
  */
 export const uuidParamSchema = z.object({
   id: z.string().uuid('Invalid UUID format'),
+});
+
+export const updateInternalRoleSchema = z.object({
+  role: roleSchema,
+});
+
+export const updateInternalStatusSchema = z.object({
+  isActive: z.boolean(),
 });

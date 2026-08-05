@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql, SQL } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
+import crypto from 'crypto';
 import { db } from '../database/db';
 import {
   questions,
@@ -143,7 +144,7 @@ const buildWhere = (query: QuestionListQuery): SQL | undefined => {
 
 /* --------------------------- File Fallback --------------------------- */
 
-const FALLBACK_DIR = '/home/user/DevBattle/database-fallback';
+const FALLBACK_DIR = path.join(process.cwd(), 'tmp', 'database-fallback');
 const FALLBACK_FILE = path.join(FALLBACK_DIR, 'questions.json');
 
 const loadFallback = (): QuestionDetail[] => {
@@ -154,7 +155,7 @@ const loadFallback = (): QuestionDetail[] => {
     if (!fs.existsSync(FALLBACK_FILE)) {
       const defaultQuestions: QuestionDetail[] = [
         {
-          id: 'q-101',
+          id: 'aaaaaaaa-0000-4000-8000-000000000101',
           title: 'Two Sum & Target Pointer',
           slug: 'two-sum-target-pointer',
           description: 'Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.',
@@ -170,7 +171,7 @@ const loadFallback = (): QuestionDetail[] => {
           memoryLimitMb: 256,
           isPremium: false,
           status: 'published',
-          createdBy: 'admin',
+          createdBy: '11111111-1111-4111-8111-111111111111',
           attemptedCount: 100,
           solvedCount: 84,
           publishedAt: new Date().toISOString(),
@@ -212,7 +213,7 @@ const loadFallback = (): QuestionDetail[] => {
           isBookmarked: true,
         },
         {
-          id: 'q-102',
+          id: 'aaaaaaaa-0000-4000-8000-000000000102',
           title: 'React Kanban Board with Drag & Drop',
           slug: 'react-kanban-board-dnd',
           description: 'Build an interactive Kanban Task Board component in React with 3 columns: To Do, In Progress, Done.',
@@ -228,7 +229,7 @@ const loadFallback = (): QuestionDetail[] => {
           memoryLimitMb: 256,
           isPremium: false,
           status: 'published',
-          createdBy: 'admin',
+          createdBy: '11111111-1111-4111-8111-111111111111',
           attemptedCount: 50,
           solvedCount: 31,
           publishedAt: new Date().toISOString(),
@@ -249,8 +250,8 @@ const loadFallback = (): QuestionDetail[] => {
             },
           ],
           starterCode: {
-            javascript: `import React, { useState } from 'react';\n\nexport default function KanbanBoard() {\n  const [columns, setColumns] = useState({\n    todo: [{ id: '1', title: 'Implement Auth Flow', priority: 'High' }],\n    inProgress: [{ id: '2', title: 'Optimize Monaco Bundle', priority: 'Medium' }],\n    done: [{ id: '3', title: 'Design Tokens Setup', priority: 'Low' }],\n  });\n\n  return (\n    <div className=\"p-6 bg-slate-900 text-white min-h-screen\">\n      <h1 className=\"text-2xl font-bold mb-6\">DevBattles Kanban</h1>\n      {/* Build Board Layout Here */}\n    </div>\n  );\n}`,
-            typescript: `import React, { useState } from 'react';\n\ninterface Task {\n  id: string;\n  title: string;\n  priority: 'High' | 'Medium' | 'Low';\n}\n\nexport default function KanbanBoard(): JSX.Element {\n  const [tasks, setTasks] = useState<Task[]>([]);\n  return (\n    <div className=\"p-6 bg-slate-950 text-slate-100 min-h-screen\">\n      <h1 className=\"text-2xl font-bold\">Interactive Kanban Board</h1>\n    </div>\n  );\n}`,
+            javascript: `import React, { useState } from 'react';\n\nexport default function KanbanBoard() {\n  const [columns, setColumns] = useState({\n    todo: [{ id: '1', title: 'Implement Auth Flow', priority: 'High' }],\n    inProgress: [{ id: '2', title: 'Optimize Monaco Bundle', priority: 'Medium' }],\n    done: [{ id: '3', title: 'Design Tokens Setup', priority: 'Low' }],\n  });\n\n  return (\n    <div className="p-6 bg-slate-900 text-white min-h-screen">\n      <h1 className="text-2xl font-bold mb-6">DevBattles Kanban</h1>\n      {/* Build Board Layout Here */}\n    </div>\n  );\n}`,
+            typescript: `import React, { useState } from 'react';\n\ninterface Task {\n  id: string;\n  title: string;\n  priority: 'High' | 'Medium' | 'Low';\n}\n\nexport default function KanbanBoard(): JSX.Element {\n  const [tasks, setTasks] = useState<Task[]>([]);\n  return (\n    <div className="p-6 bg-slate-950 text-slate-100 min-h-screen">\n      <h1 className="text-2xl font-bold">Interactive Kanban Board</h1>\n    </div>\n  );\n}`,
           },
           testCases: [
             { id: 'tc-201', input: 'Initial state renders 3 columns', expectedOutput: 'Rendered', isHidden: false, isSample: true, sortOrder: 0 },
@@ -259,7 +260,7 @@ const loadFallback = (): QuestionDetail[] => {
           isBookmarked: false,
         },
         {
-          id: 'q-103',
+          id: 'aaaaaaaa-0000-4000-8000-000000000103',
           title: 'LRU Cache Design & O(1) Operations',
           slug: 'lru-cache-design',
           description: 'Design a data structure that follows the constraints of a Least Recently Used (LRU) Cache.',
@@ -275,7 +276,7 @@ const loadFallback = (): QuestionDetail[] => {
           memoryLimitMb: 256,
           isPremium: false,
           status: 'published',
-          createdBy: 'admin',
+          createdBy: '11111111-1111-4111-8111-111111111111',
           attemptedCount: 40,
           solvedCount: 19,
           publishedAt: new Date().toISOString(),
@@ -299,7 +300,7 @@ const loadFallback = (): QuestionDetail[] => {
           isBookmarked: true,
         },
         {
-          id: 'q-104',
+          id: 'aaaaaaaa-0000-4000-8000-000000000104',
           title: 'Virtual Scrollable List with Infinite Loading',
           slug: 'virtual-scrollable-list',
           description: 'Build a custom Virtualized List component in React capable of rendering 100,000 items smoothly at 60 FPS without DOM lagging.',
@@ -315,7 +316,7 @@ const loadFallback = (): QuestionDetail[] => {
           memoryLimitMb: 256,
           isPremium: false,
           status: 'published',
-          createdBy: 'admin',
+          createdBy: '11111111-1111-4111-8111-111111111111',
           attemptedCount: 30,
           solvedCount: 15,
           publishedAt: new Date().toISOString(),
@@ -329,13 +330,13 @@ const loadFallback = (): QuestionDetail[] => {
           constraints: ['Max DOM nodes rendered at any moment <= 30'],
           examples: [],
           starterCode: {
-            typescript: `import React, { useState, useRef } from 'react';\n\nexport default function VirtualList({ itemsCount = 100000, itemHeight = 40 }) {\n  const [scrollTop, setScrollTop] = useState(0);\n  return <div className=\"h-96 overflow-auto\">Virtualized List</div>;\n}`,
+            typescript: `import React, { useState, useRef } from 'react';\n\nexport default function VirtualList({ itemsCount = 100000, itemHeight = 40 }) {\n  const [scrollTop, setScrollTop] = useState(0);\n  return <div className="h-96 overflow-auto">Virtualized List</div>;\n}`,
           },
           testCases: [],
           isBookmarked: false,
         },
         {
-          id: 'q-105',
+          id: 'aaaaaaaa-0000-4000-8000-000000000105',
           title: 'Token Bucket Rate Limiter',
           slug: 'token-bucket-rate-limiter',
           description: 'Implement a Rate Limiter class using the Token Bucket algorithm with burst capacity and refill rate per second.',
@@ -351,7 +352,7 @@ const loadFallback = (): QuestionDetail[] => {
           memoryLimitMb: 256,
           isPremium: false,
           status: 'published',
-          createdBy: 'admin',
+          createdBy: '11111111-1111-4111-8111-111111111111',
           attemptedCount: 80,
           solvedCount: 54,
           publishedAt: new Date().toISOString(),
@@ -577,7 +578,7 @@ export const questionRepository = {
       });
     } catch (err) {
       const list = loadFallback();
-      const id = `q-${Date.now()}`;
+      const id = crypto.randomUUID();
       const newQ: QuestionDetail = {
         id,
         title: dto.title,
@@ -851,7 +852,7 @@ export const questionRepository = {
       const [countRows, bookmarkRows] = await Promise.all([
         db.select({ value: count() }).from(questionBookmarks).where(baseWhere),
         db.query.questionBookmarks.findMany({
-          where: eq(questionBookmarks.userId, userId),
+          where: baseWhere,
           with: { question: { with: withChildren } },
           orderBy: [desc(questionBookmarks.createdAt)],
           offset: getOffset(page, limit),

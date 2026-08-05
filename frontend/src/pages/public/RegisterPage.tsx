@@ -220,8 +220,8 @@ export const RegisterPage: React.FC = () => {
                   id="reg-password"
                   type="password"
                   required
-                  minLength={6}
-                  placeholder="Min. 6 characters"
+                  minLength={8}
+                  placeholder="8+ chars, upper/lower/number/symbol"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={inputClass}
@@ -235,7 +235,7 @@ export const RegisterPage: React.FC = () => {
                   id="reg-confirm"
                   type="password"
                   required
-                  minLength={6}
+                  minLength={8}
                   placeholder="Re-enter password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

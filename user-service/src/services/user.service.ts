@@ -14,6 +14,8 @@ import { ApiError } from '../utils/error';
 import { Messages } from '../constants/messages';
 import { userRepository } from '../repositories/user.repository';
 import { saveAvatar, removeAvatar } from '../utils/fileUpload';
+import { config } from '../config/env';
+import logger from '../utils/logger';
 
 /** Abstraction so the service can be unit-tested with a mock repository. */
 export interface IUserRepository {
@@ -58,6 +60,44 @@ const computeProfileCompletion = (p: Partial<UserProfile>): number => {
 
 export class UserService {
   constructor(private readonly repository: IUserRepository = userRepository) {}
+
+  private async syncAuthAccount(
+    authUserId: string,
+    field: 'role' | 'status',
+    payload: Record<string, unknown>,
+  ): Promise<void> {
+    if (config.isTest) return;
+
+    try {
+      const res = await fetch(`${config.authServiceUrl}/api/v1/internal/users/${authUserId}/${field}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-internal-api-key': config.internalApiKey,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const detail = await res.text();
+        logger.error('Auth Service synchronization failed', {
+          authUserId,
+          field,
+          status: res.status,
+          detail,
+        });
+        throw ApiError.internal(Messages.AUTH_SYNC_FAILED, 'AUTH_SYNC_FAILED');
+      }
+    } catch (err) {
+      if (err instanceof ApiError) throw err;
+      logger.error('Auth Service synchronization error', {
+        authUserId,
+        field,
+        error: err instanceof Error ? err.message : err,
+      });
+      throw ApiError.internal(Messages.AUTH_SYNC_FAILED, 'AUTH_SYNC_FAILED');
+    }
+  }
 
   /* ----------------------------- Self (Me) ----------------------------- */
 
@@ -173,16 +213,22 @@ export class UserService {
   async changeStatus(id: string, isActive: boolean): Promise<UserProfile> {
     const user = await this.repository.findById(id);
     if (!user) throw ApiError.notFound(Messages.USER_NOT_FOUND, 'USER_NOT_FOUND');
+
     const updated = await this.repository.update(id, { isActive } as any);
     if (!updated) throw ApiError.notFound(Messages.USER_NOT_FOUND, 'USER_NOT_FOUND');
+
+    await this.syncAuthAccount(user.authUserId, 'status', { isActive });
     return updated;
   }
 
   async changeRole(id: string, role: Role): Promise<UserProfile> {
     const user = await this.repository.findById(id);
     if (!user) throw ApiError.notFound(Messages.USER_NOT_FOUND, 'USER_NOT_FOUND');
+
     const updated = await this.repository.update(id, { role } as any);
     if (!updated) throw ApiError.notFound(Messages.USER_NOT_FOUND, 'USER_NOT_FOUND');
+
+    await this.syncAuthAccount(user.authUserId, 'role', { role });
     return updated;
   }
 

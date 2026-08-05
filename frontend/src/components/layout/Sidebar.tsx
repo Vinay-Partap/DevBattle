@@ -56,7 +56,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
     { label: 'Dashboard', path: '/dashboard', icon: <LayoutDashboard className="w-4 h-4" /> },
     { label: 'Question Bank', path: '/questions', icon: <Code2 className="w-4 h-4" /> },
     { label: 'Daily Homework', path: '/homework', icon: <BookOpen className="w-4 h-4" />, badge: '1 Due' },
-    { label: 'Coding Workspace', path: '/workspace/q-101', icon: <Sparkles className="w-4 h-4 text-emerald-400" /> },
+    { label: 'Start Coding', path: '/questions', icon: <Sparkles className="w-4 h-4 text-emerald-400" /> },
     { label: 'Coding Contests', path: '/contests', icon: <Trophy className="w-4 h-4" />, badge: 'LIVE' },
     { label: 'Projects Arena', path: '/projects', icon: <FolderGit2 className="w-4 h-4" /> },
     { label: 'My Submissions', path: '/submissions', icon: <CheckSquare className="w-4 h-4" /> },

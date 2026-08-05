@@ -23,7 +23,7 @@ import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 
-const FALLBACK_DIR = '/home/user/DevBattle/database-fallback';
+const FALLBACK_DIR = path.join(process.cwd(), 'tmp', 'database-fallback');
 const FALLBACK_FILE = path.join(FALLBACK_DIR, 'user_profiles.json');
 
 const loadFallback = (): any[] => {
@@ -35,7 +35,7 @@ const loadFallback = (): any[] => {
       // Seed default accounts
       const defaultProfiles = [
         {
-          id: "u1111111-1111-4111-8111-111111111111",
+          id: "11111111-aaaa-4111-8111-111111111111",
           authUserId: "11111111-1111-4111-8111-111111111111",
           firstName: "Sarah",
           lastName: "Connor",
@@ -69,7 +69,7 @@ const loadFallback = (): any[] => {
           experience: []
         },
         {
-          id: "u2222222-2222-4222-8222-222222222222",
+          id: "22222222-aaaa-4222-8222-222222222222",
           authUserId: "22222222-2222-4222-8222-222222222222",
           firstName: "Aarav",
           lastName: "Patel",
@@ -80,9 +80,9 @@ const loadFallback = (): any[] => {
           gender: "male",
           dateOfBirth: "2004-03-12",
           role: "student",
-          collegeId: "col-1",
-          branchId: "br-cs",
-          batchId: "batch-2025-a",
+          collegeId: null,
+          branchId: null,
+          batchId: null,
           profileCompletion: 95,
           isActive: true,
           createdAt: new Date().toISOString(),
@@ -112,7 +112,7 @@ const loadFallback = (): any[] => {
           experience: []
         },
         {
-          id: "u3333333-3333-4333-8333-333333333333",
+          id: "33333333-aaaa-4333-8333-333333333333",
           authUserId: "33333333-3333-4333-8333-333333333333",
           firstName: "Rajesh",
           lastName: "Sharma",
@@ -251,13 +251,14 @@ export class UserRepository {
           firstName: dto.firstName ?? '',
           lastName: dto.lastName ?? '',
           role: dto.role ?? 'student',
+          isActive: dto.isActive ?? false,
         })
         .returning();
       return mapProfile(row);
     } catch (err) {
       const list = loadFallback();
       const newUser = {
-        id: 'u' + crypto.randomUUID(),
+        id: crypto.randomUUID(),
         authUserId: dto.authUserId,
         firstName: dto.firstName ?? '',
         lastName: dto.lastName ?? '',
@@ -272,7 +273,7 @@ export class UserRepository {
         branchId: null,
         batchId: null,
         profileCompletion: 15,
-        isActive: true,
+        isActive: dto.isActive ?? false,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         socialLinks: {
