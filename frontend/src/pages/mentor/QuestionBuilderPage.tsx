@@ -260,7 +260,16 @@ export const QuestionBuilderPage: React.FC = () => {
 
       const json = await res.json().catch(() => null);
       if (!res.ok || !json?.success) {
-        throw new Error(json?.message || 'Question creation failed.');
+        const validationDetails = Array.isArray(json?.errors)
+          ? json.errors
+              .map((item: any) => `${item.path || item.field || 'field'}: ${item.message || item.code || 'invalid'}`)
+              .join(' | ')
+          : '';
+        throw new Error(
+          validationDetails
+            ? `${json?.message || 'Question creation failed.'} ${validationDetails}`
+            : json?.message || 'Question creation failed.',
+        );
       }
 
       addToast('success', 'Question Saved as Draft', 'It is now listed in Teacher Drafts below. Publish it when ready for students.');
