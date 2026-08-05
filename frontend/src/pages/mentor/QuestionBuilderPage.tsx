@@ -176,8 +176,8 @@ export const QuestionBuilderPage: React.FC = () => {
   };
 
   const buildPayload = () => ({
-    title,
-    description: description || 'Question details will be completed by the teacher.',
+    title: title.trim(),
+    description: description.trim() || 'Question details will be completed by the teacher.',
     problemStatement: description,
     inputFormat,
     outputFormat,
@@ -243,10 +243,38 @@ export const QuestionBuilderPage: React.FC = () => {
     referenceDesigns: figmaLink ? [{ type: 'figma', figmaUrl: figmaLink, description: 'Reference design' }] : [],
   });
 
+  const validateDraftBeforeSubmit = (): string | null => {
+    if (!title.trim()) {
+      setStep(1);
+      return 'Please fill Step 1 → Title before saving the draft.';
+    }
+
+    if (!description.trim() || description.trim().length < 10) {
+      setStep(2);
+      return 'Please fill Step 2 → Problem Statement with at least 10 characters.';
+    }
+
+    const codeOptionalTypes: ProblemType[] = ['mcq', 'system-design'];
+    if (!codeOptionalTypes.includes(type) && supportedLanguages.length === 0) {
+      setStep(3);
+      return 'Please select at least one supported language in Step 3.';
+    }
+
+    return null;
+  };
+
   const handleSaveDraft = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsSubmitting(true);
+
+    const clientError = validateDraftBeforeSubmit();
+    if (clientError) {
+      setError(clientError);
+      setIsSubmitting(false);
+      addToast('error', 'Missing Required Field', clientError);
+      return;
+    }
 
     try {
       const res = await fetch('/api/v1/questions', {

@@ -118,7 +118,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
 
         {currentNav.map((item) => (
           <NavLink
-            key={item.path}
+            key={`${item.path}-${item.label}`}
             to={item.path}
             title={isCollapsed ? item.label : undefined}
             end={item.path === '/dashboard' || item.path === '/mentor' || item.path === '/admin'}
