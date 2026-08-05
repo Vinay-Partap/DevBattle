@@ -82,24 +82,33 @@ const run = async (): Promise<void> => {
   }
 
   for (const demo of DEMO_USERS) {
-    const exists = await userRepository.existsByAuthUserId(demo.authUserId);
-    if (exists) {
-      logger.info(`Skipping existing seed user: ${demo.email}`);
-      continue;
+    const existing = await userRepository.findByAuthUserId(demo.authUserId);
+    const profile = existing
+      ? await userRepository.update(existing.id, {
+          email: demo.email,
+          firstName: demo.firstName,
+          lastName: demo.lastName,
+          role: demo.role,
+          isActive: true,
+        } as any)
+      : await userRepository.create({
+          authUserId: demo.authUserId,
+          email: demo.email,
+          firstName: demo.firstName,
+          lastName: demo.lastName,
+          role: demo.role,
+          isActive: true,
+        });
+
+    if (!profile) {
+      throw new Error(`Failed to upsert seed user: ${demo.email}`);
     }
-    const profile = await userRepository.create({
-      authUserId: demo.authUserId,
-      email: demo.email,
-      firstName: demo.firstName,
-      lastName: demo.lastName,
-      role: demo.role,
-      isActive: true,
-    });
+
     if (demo.skills) await userRepository.replaceSkills(profile.id, demo.skills);
     if (demo.education) await userRepository.replaceEducation(profile.id, demo.education);
     if (demo.experience) await userRepository.replaceExperience(profile.id, demo.experience);
     if (demo.socialLinks) await userRepository.upsertSocialLinks(profile.id, demo.socialLinks);
-    logger.info(`Seeded ${demo.role}: ${demo.email}`);
+    logger.info(`${existing ? 'Updated' : 'Seeded'} ${demo.role}: ${demo.email}`);
   }
 
   await pool.end();

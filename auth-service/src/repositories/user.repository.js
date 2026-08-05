@@ -5,6 +5,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -13,32 +14,119 @@ import { users } from '../database/schema.js';
 
 const FALLBACK_DIR = path.join(process.cwd(), 'tmp', 'database-fallback');
 const FALLBACK_FILE = path.join(FALLBACK_DIR, 'auth_users.json');
+const SALT_ROUNDS = 12;
 
-const loadFallback = () => {
-  try {
-    if (!fs.existsSync(FALLBACK_DIR)) {
-      fs.mkdirSync(FALLBACK_DIR, { recursive: true });
-    }
-    if (!fs.existsSync(FALLBACK_FILE)) {
-      fs.writeFileSync(FALLBACK_FILE, JSON.stringify([], null, 2), 'utf8');
-      return [];
-    }
-    const content = fs.readFileSync(FALLBACK_FILE, 'utf8');
-    return JSON.parse(content);
-  } catch (error) {
-    console.error('Error loading auth fallback:', error);
-    return [];
+const FALLBACK_SEED_ACCOUNTS = [
+  {
+    id: '11111111-1111-4111-8111-111111111111',
+    name: 'Sarah Connor',
+    email: 'admin@devbattles.io',
+    password: 'AdminP@ssw0rd!',
+    role: 'admin',
+  },
+  {
+    id: '22222222-2222-4222-8222-222222222222',
+    name: 'Aarav Patel',
+    email: 'aarav.patel@krmangalam.edu.in',
+    password: 'StudentP@ssw0rd!',
+    role: 'student',
+  },
+  {
+    id: '33333333-3333-4333-8333-333333333333',
+    name: 'Prof. Rajesh Sharma',
+    email: 'rajesh.sharma@krmangalam.edu.in',
+    password: 'MentorP@ssw0rd!',
+    role: 'mentor',
+  },
+];
+
+const ensureFallbackDir = () => {
+  if (!fs.existsSync(FALLBACK_DIR)) {
+    fs.mkdirSync(FALLBACK_DIR, { recursive: true });
   }
 };
 
 const saveFallback = (usersList) => {
   try {
-    if (!fs.existsSync(FALLBACK_DIR)) {
-      fs.mkdirSync(FALLBACK_DIR, { recursive: true });
-    }
+    ensureFallbackDir();
     fs.writeFileSync(FALLBACK_FILE, JSON.stringify(usersList, null, 2), 'utf8');
   } catch (error) {
     console.error('Error saving auth fallback:', error);
+  }
+};
+
+const passwordMatches = (password, hash) => {
+  try {
+    return Boolean(hash) && bcrypt.compareSync(password, hash);
+  } catch (_error) {
+    return false;
+  }
+};
+
+const ensureSeedAccounts = (usersList) => {
+  let changed = false;
+  const now = new Date().toISOString();
+  const next = [...usersList];
+
+  for (const seed of FALLBACK_SEED_ACCOUNTS) {
+    const index = next.findIndex(
+      (user) => user.email?.trim().toLowerCase() === seed.email.toLowerCase(),
+    );
+
+    if (index === -1) {
+      const { password, ...account } = seed;
+      next.push({
+        ...account,
+        passwordHash: bcrypt.hashSync(password, SALT_ROUNDS),
+        isActive: true,
+        isVerified: true,
+        createdAt: now,
+        updatedAt: now,
+      });
+      changed = true;
+      continue;
+    }
+
+    const existing = next[index];
+    const patch = {
+      id: seed.id,
+      name: seed.name,
+      email: seed.email,
+      role: seed.role,
+      isActive: true,
+      isVerified: true,
+    };
+
+    if (!passwordMatches(seed.password, existing.passwordHash)) {
+      patch.passwordHash = bcrypt.hashSync(seed.password, SALT_ROUNDS);
+    }
+
+    const needsUpdate = Object.entries(patch).some(([key, value]) => existing[key] !== value);
+    if (needsUpdate) {
+      next[index] = { ...existing, ...patch, updatedAt: now };
+      changed = true;
+    }
+  }
+
+  return { usersList: next, changed };
+};
+
+const loadFallback = () => {
+  try {
+    ensureFallbackDir();
+    const usersList = fs.existsSync(FALLBACK_FILE)
+      ? JSON.parse(fs.readFileSync(FALLBACK_FILE, 'utf8'))
+      : [];
+    const seeded = ensureSeedAccounts(Array.isArray(usersList) ? usersList : []);
+
+    if (seeded.changed || !fs.existsSync(FALLBACK_FILE)) {
+      saveFallback(seeded.usersList);
+    }
+
+    return seeded.usersList;
+  } catch (error) {
+    console.error('Error loading auth fallback:', error);
+    return [];
   }
 };
 

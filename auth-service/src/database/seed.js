@@ -53,13 +53,8 @@ const seed = async () => {
 
     for (const seedUser of seedUsers) {
       const existing = await db.select().from(users).where(eq(users.email, seedUser.email)).limit(1);
-      if (existing.length > 0) {
-        logger.info(`Skipping existing auth user: ${seedUser.email}`);
-        continue;
-      }
-
       const passwordHash = await bcrypt.hash(seedUser.password, SALT_ROUNDS);
-      await db.insert(users).values({
+      const values = {
         id: seedUser.id,
         name: seedUser.name,
         email: seedUser.email,
@@ -67,7 +62,18 @@ const seed = async () => {
         role: seedUser.role,
         isActive: seedUser.isActive,
         isVerified: seedUser.isVerified,
-      });
+      };
+
+      if (existing.length > 0) {
+        await db
+          .update(users)
+          .set({ ...values, updatedAt: new Date() })
+          .where(eq(users.email, seedUser.email));
+        logger.info(`Updated seed auth user: ${seedUser.email}`);
+        continue;
+      }
+
+      await db.insert(users).values(values);
       logger.info(`Seeded ${seedUser.role}: ${seedUser.email}`);
     }
 
