@@ -27,7 +27,7 @@ export const config = {
     ? env.CORS_ORIGIN.split(',').map((o) => o.trim())
     : ['http://localhost:5173'],
 
-  databaseUrl: env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/devbattle',
+  databaseUrl: env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/devbattle_user',
 
   jwt: {
     secret: env.JWT_ACCESS_SECRET || env.JWT_SECRET || 'devbattle-shared-jwt-secret',

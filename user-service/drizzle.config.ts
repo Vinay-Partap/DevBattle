@@ -7,7 +7,7 @@ export default defineConfig({
   dialect: 'postgresql',
   dbCredentials: {
     url:
-      process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/devbattle',
+      process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5433/devbattle_user',
   },
   strict: true,
   verbose: true,
