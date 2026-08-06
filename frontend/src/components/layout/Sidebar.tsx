@@ -72,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
 
   const mentorNav: NavItem[] = [
     { label: 'Mentor Overview', path: '/mentor', icon: <LayoutDashboard className="w-4 h-4" /> },
+    { label: 'Question Bank', path: '/questions', icon: <Code2 className="w-4 h-4" /> },
     { label: 'Homework Builder', path: '/mentor/homework-builder', icon: <BookOpen className="w-4 h-4" /> },
     { label: 'Question Builder', path: '/mentor/question-builder', icon: <Code2 className="w-4 h-4" /> },
     { label: 'Contests Manager', path: '/mentor/contests', icon: <Trophy className="w-4 h-4" /> },

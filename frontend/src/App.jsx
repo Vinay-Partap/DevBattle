@@ -119,11 +119,11 @@ export function App() {
                         <Route path="/profile" element={<ProfilePage />} />
                         <Route path="/settings" element={<SettingsPage />} />
                         <Route path="/notifications" element={<NotificationsPage />} />
+                        <Route path="/questions" element={<QuestionBankPage />} />
 
                         {/* Student Routes */}
                         <Route element={<ProtectedRoute allow={['student']} />}>
                           <Route path="/dashboard" element={<StudentDashboard />} />
-                          <Route path="/questions" element={<QuestionBankPage />} />
                           <Route path="/homework" element={<HomeworkPage />} />
                           <Route path="/contests" element={<ContestsPage />} />
                           <Route path="/projects" element={<ProjectsPage />} />
