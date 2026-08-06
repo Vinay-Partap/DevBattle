@@ -292,33 +292,55 @@ export const QuestionBankPage: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {displayedQuestions.map((question) => (
-<div key={question.id} className="space-y-2">
-              {canManage && (
-                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-900/70 p-2">
-                  <Badge variant={question.status === 'published' ? 'emerald' : question.status === 'archived' ? 'neutral' : 'amber'}>
+            <QuestionCard
+              key={question.id}
+              question={question}
+              showSolveAction={!canManage}
+              statusBadge={
+                canManage ? (
+                  <Badge
+                    variant={
+                      question.status === 'published'
+                        ? 'emerald'
+                        : question.status === 'archived'
+                          ? 'neutral'
+                          : 'amber'
+                    }
+                  >
                     {(question.status ?? 'draft').toUpperCase()}
                   </Badge>
-                  <div className="flex items-center gap-1.5">
-                    <Button size="sm" variant="outline" icon={<Pencil className="w-3.5 h-3.5" />} onClick={() => openEdit(question)}>
+                ) : undefined
+              }
+              managementActions={
+                canManage ? (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      icon={<Pencil className="w-3.5 h-3.5" />}
+                      onClick={() => openEdit(question)}
+                    >
                       Edit
                     </Button>
-                    <Button size="sm" variant="danger" icon={<Trash2 className="w-3.5 h-3.5" />} onClick={() => handleDelete(question)}>
+                    <Button
+                      size="sm"
+                      variant="danger"
+                      icon={<Trash2 className="w-3.5 h-3.5" />}
+                      onClick={() => handleDelete(question)}
+                    >
                       Delete
                     </Button>
-                  </div>
-                </div>
-              )}
-              <QuestionCard
-                question={question}
-                onBookmarkChange={(questionId, bookmarked) =>
-                  setQuestionsList((prev) =>
-                    prev
-                      .map((item) => (item.id === questionId ? { ...item, isBookmarked: bookmarked } : item))
-                      .filter((item) => (onlyBookmarked ? item.isBookmarked : true)),
-                  )
-                }
-              />
-            </div>
+                  </>
+                ) : undefined
+              }
+              onBookmarkChange={(questionId, bookmarked) =>
+                setQuestionsList((prev) =>
+                  prev
+                    .map((item) => (item.id === questionId ? { ...item, isBookmarked: bookmarked } : item))
+                    .filter((item) => (onlyBookmarked ? item.isBookmarked : true)),
+                )
+              }
+            />
           ))}
         </div>
       )}

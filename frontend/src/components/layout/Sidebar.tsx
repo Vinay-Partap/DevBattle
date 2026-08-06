@@ -103,7 +103,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isCollapsed, onToggle }) => {
   return (
     <aside
       className={cn(
-        'relative border-r border-slate-800 bg-slate-950/90 h-[calc(100vh-4rem)] sticky top-16 transition-all duration-300 flex flex-col justify-between select-none z-30 light:bg-white light:border-slate-200',
+        'fixed left-0 top-16 bottom-0 border-r border-slate-800 bg-slate-950/95 h-[calc(100vh-4rem)] transition-all duration-300 flex flex-col justify-between select-none z-30 light:bg-white light:border-slate-200',
         isCollapsed ? 'w-16' : 'w-64'
       )}
     >
