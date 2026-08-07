@@ -16,6 +16,8 @@ const QUESTION_TYPES: { id: ProblemType; label: string }[] = [
   { id: 'nodejs', label: 'Node.js' },
   { id: 'javascript', label: 'JavaScript' },
   { id: 'typescript', label: 'TypeScript' },
+  { id: 'html', label: 'HTML' },
+  { id: 'css', label: 'CSS' },
   { id: 'html-css', label: 'HTML/CSS' },
   { id: 'bug-fixing', label: 'Bug Fixing' },
   { id: 'debugging', label: 'Debugging' },
@@ -77,6 +79,7 @@ const slugify = (value: string) =>
 
 export const QuestionBuilderPage: React.FC = () => {
   const { addToast } = useToast();
+  const [hasSelectedType, setHasSelectedType] = useState(false);
   const [step, setStep] = useState(1);
   const [drafts, setDrafts] = useState<Question[]>([]);
   const [loadingDrafts, setLoadingDrafts] = useState(false);
@@ -130,10 +133,11 @@ export const QuestionBuilderPage: React.FC = () => {
   const [figmaLink, setFigmaLink] = useState('');
 
   const generatedSlug = useMemo(() => slugify(title), [title]);
-  const isFrontendType = ['frontend', 'react', 'html-css', 'fullstack'].includes(type);
+  const isFrontendType = ['frontend', 'react', 'html', 'css', 'html-css', 'fullstack'].includes(type);
   const isBackendType = ['backend', 'nodejs', 'fullstack'].includes(type);
   const isSqlType = type === 'sql';
   const isMcqType = type === 'mcq';
+  const isDebuggingType = type === 'debugging' || type === 'bug-fixing';
   const isSystemDesignType = type === 'system-design';
 
   const authHeaders = () => {
@@ -211,6 +215,24 @@ export const QuestionBuilderPage: React.FC = () => {
       codeQuality: 10,
       documentation: 5,
       bonus: 0,
+    },
+    evaluationConfig: {
+      evaluator: type,
+      correctAnswers: isMcqType ? csv(outputFormat) : undefined,
+      sql: isSqlType ? { schema: inputFormat, expectedResult: outputFormat } : undefined,
+      api: isBackendType ? { contract: acceptanceCriteria } : undefined,
+      deterministic: true,
+      requiresIsolatedWorker: !isMcqType,
+    },
+    typeSpecificConfig: {
+      options: isMcqType ? csv(inputFormat) : undefined,
+      frontend: isFrontendType ? { requiredTech, requiredFeatures, requiredFiles: csv(requiredFiles), figmaLink } : undefined,
+      debugging: isDebuggingType ? { expectedBehavior: outputFormat } : undefined,
+    },
+    publicMetadata: {
+      options: isMcqType ? csv(inputFormat) : undefined,
+      requiredTech: isFrontendType ? requiredTech : undefined,
+      requiredFeatures: isFrontendType ? requiredFeatures : undefined,
     },
     examples: sampleInput && sampleOutput ? [{ input: sampleInput, output: sampleOutput, explanation: sampleExplanation || null }] : [],
     starterCode: Object.fromEntries(supportedLanguages.map((lang) => [lang, starterCode[lang] ?? ''])),
@@ -334,11 +356,52 @@ export const QuestionBuilderPage: React.FC = () => {
     await fetchDrafts();
   };
 
+  if (!hasSelectedType) {
+    return (
+      <div className="space-y-8 pb-12">
+        <div className="pb-6 border-b border-slate-800">
+          <Badge variant="indigo" icon={<Code2 className="w-3.5 h-3.5" />}>Create Question</Badge>
+          <h1 className="text-2xl font-black text-slate-100 mt-3">Select Question Type</h1>
+          <p className="text-xs text-slate-400 max-w-3xl">
+            Choose the assessment type first. The authoring form, evaluation settings, and preview experience are type-specific.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {QUESTION_TYPES.map((questionType) => (
+            <button
+              key={questionType.id}
+              type="button"
+              onClick={() => {
+                setType(questionType.id);
+                setHasSelectedType(true);
+                setStep(1);
+              }}
+              className="text-left p-5 rounded-2xl border border-slate-800 bg-slate-900/70 hover:border-indigo-500/60 hover:bg-indigo-950/20 transition-colors"
+            >
+              <span className="text-sm font-black text-slate-100 block">{questionType.label}</span>
+              <span className="text-[11px] text-slate-500 mt-1 block">Dynamic authoring + deterministic evaluation adapter</span>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-12">
       <div className="pb-6 border-b border-slate-800">
-        <Badge variant="indigo" icon={<Code2 className="w-3.5 h-3.5" />}>Unified Question Builder</Badge>
-        <h1 className="text-2xl font-black text-slate-100 mt-3">Create Question</h1>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Badge variant="indigo" icon={<Code2 className="w-3.5 h-3.5" />}>Unified Question Builder</Badge>
+          <button
+            type="button"
+            onClick={() => setHasSelectedType(false)}
+            className="text-[11px] font-bold text-cyan-300 hover:underline"
+          >
+            Change Type
+          </button>
+        </div>
+        <h1 className="text-2xl font-black text-slate-100 mt-3">Create {QUESTION_TYPES.find((item) => item.id === type)?.label} Question</h1>
         <p className="text-xs text-slate-400 max-w-3xl">
           Build reusable questions for practice, homework, contests, assignments, AI challenges, daily challenges, and mock interviews.
         </p>
@@ -428,12 +491,49 @@ export const QuestionBuilderPage: React.FC = () => {
               ))}
               {isFrontendType && (
                 <Card className="p-4 space-y-3 border-cyan-500/30">
-                  <h3 className="text-sm font-bold text-cyan-300 flex gap-2"><UploadCloud className="w-4 h-4" /> Frontend-Specific Requirements</h3>
+                  <h3 className="text-sm font-bold text-cyan-300 flex gap-2"><UploadCloud className="w-4 h-4" /> Frontend / React / HTML / CSS Requirements</h3>
                   <Selector label="Required Technologies" values={FRONTEND_TECH} selected={requiredTech} onToggle={(v) => toggle(v, requiredTech, setRequiredTech)} />
                   <Selector label="Required Features" values={REQUIRED_FEATURES} selected={requiredFeatures} onToggle={(v) => toggle(v, requiredFeatures, setRequiredFeatures)} />
                   <Field label="Required files comma separated"><input value={requiredFiles} onChange={(e) => setRequiredFiles(e.target.value)} className="input" /></Field>
-                  <Field label="Acceptance Criteria"><textarea rows={3} value={acceptanceCriteria} onChange={(e) => setAcceptanceCriteria(e.target.value)} className="input" /></Field>
+                  <Field label="Functional / UI acceptance criteria"><textarea rows={3} value={acceptanceCriteria} onChange={(e) => setAcceptanceCriteria(e.target.value)} className="input" /></Field>
                   <Field label="Figma / Reference Design Link"><input value={figmaLink} onChange={(e) => setFigmaLink(e.target.value)} className="input" /></Field>
+                  <div className="rounded-xl border border-cyan-500/20 bg-cyan-950/20 p-3 text-[11px] text-cyan-100">
+                    Live browser preview is available for this question type in the student workspace and authoring flow.
+                  </div>
+                </Card>
+              )}
+
+              {isSqlType && (
+                <Card className="p-4 space-y-3 border-emerald-500/30">
+                  <h3 className="text-sm font-bold text-emerald-300">SQL Evaluation Configuration</h3>
+                  <Field label="Database schema / tables"><textarea rows={4} value={inputFormat} onChange={(e) => setInputFormat(e.target.value)} className="input font-mono" placeholder="employees(id INT PK, name TEXT, salary INT)" /></Field>
+                  <Field label="Expected result / output"><textarea rows={3} value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} className="input font-mono" placeholder="name | salary" /></Field>
+                  <p className="text-[11px] text-slate-400">SQL evaluation compares normalized result sets, never raw query strings.</p>
+                </Card>
+              )}
+
+              {isBackendType && (
+                <Card className="p-4 space-y-3 border-amber-500/30">
+                  <h3 className="text-sm font-bold text-amber-300">Backend / API Evaluation Configuration</h3>
+                  <Field label="Required endpoints / request-response contract"><textarea rows={5} value={acceptanceCriteria} onChange={(e) => setAcceptanceCriteria(e.target.value)} className="input" placeholder="POST /api/tasks -> 201, GET /api/tasks -> 200" /></Field>
+                  <p className="text-[11px] text-slate-400">Backend evaluation is designed for isolated workers that start the submitted server and run HTTP/API tests.</p>
+                </Card>
+              )}
+
+              {isDebuggingType && (
+                <Card className="p-4 space-y-3 border-rose-500/30">
+                  <h3 className="text-sm font-bold text-rose-300">Debugging Configuration</h3>
+                  <Field label="Buggy starter code"><textarea rows={7} value={starterCode[supportedLanguages[0] ?? 'javascript'] ?? ''} onChange={(e) => setStarterCode((prev) => ({ ...prev, [supportedLanguages[0] ?? 'javascript']: e.target.value }))} className="input font-mono" /></Field>
+                  <Field label="Expected behavior"><textarea rows={3} value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} className="input" /></Field>
+                </Card>
+              )}
+
+              {isMcqType && (
+                <Card className="p-4 space-y-3 border-purple-500/30">
+                  <h3 className="text-sm font-bold text-purple-300">MCQ / Theory Configuration</h3>
+                  <Field label="Options comma separated"><textarea rows={3} value={inputFormat} onChange={(e) => setInputFormat(e.target.value)} className="input" placeholder="A. Closure, B. Loop, C. Object method" /></Field>
+                  <Field label="Correct answer(s) for private evaluation"><input value={outputFormat} onChange={(e) => setOutputFormat(e.target.value)} className="input" placeholder="A" /></Field>
+                  <p className="text-[11px] text-slate-400">Correct answers are stored in private evaluation config and are not returned to students.</p>
                 </Card>
               )}
             </div>

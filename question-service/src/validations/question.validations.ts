@@ -24,6 +24,8 @@ export const problemTypeValues = [
   'nodejs',
   'javascript',
   'typescript',
+  'html',
+  'css',
   'html-css',
   'bug-fixing',
   'debugging',
@@ -160,6 +162,9 @@ export const createQuestionSchema = z.object({
   plagiarism: plagiarismSchema.default({}),
   submission: submissionSchema.default({}),
   scoring: scoringSchema.default({}),
+  evaluationConfig: z.record(z.unknown()).default({}),
+  typeSpecificConfig: z.record(z.unknown()).default({}),
+  publicMetadata: z.record(z.unknown()).default({}),
   examples: z.array(exampleSchema).default([]),
   starterCode: z.record(z.enum(LANGUAGES), z.string()).default({}),
   testCases: z.array(testCaseSchema).default([]),
@@ -206,6 +211,15 @@ export const changeStatusSchema = z.object({
 export const bookmarkParamSchema = questionIdParamSchema;
 
 /* --------------------------- Internal schemas --------------------------- */
+
+export const evaluationSubmissionSchema = z.object({
+  code: z.string().max(1_000_000).optional(),
+  language: z.string().max(50).optional(),
+  answer: z.unknown().optional(),
+  files: z.record(z.string()).optional(),
+  query: z.string().max(1_000_000).optional(),
+  metadata: z.record(z.unknown()).optional(),
+});
 
 export const internalStatsSchema = z.object({
   attempted: z.boolean().optional(),

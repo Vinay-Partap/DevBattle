@@ -11,6 +11,7 @@ import {
   createQuestionSchema,
   updateQuestionSchema,
   changeStatusSchema,
+  evaluationSubmissionSchema,
 } from '../validations/question.validations';
 
 const router = Router();
@@ -59,6 +60,14 @@ router.delete(
   authenticate,
   validate({ params: questionIdParamSchema }),
   asyncHandler(questionController.removeBookmark),
+);
+
+
+router.post(
+  '/:id/evaluate',
+  authenticate,
+  validate({ params: questionIdParamSchema, body: evaluationSubmissionSchema }),
+  asyncHandler(questionController.evaluate),
 );
 
 // Authoring (mentors & admins)

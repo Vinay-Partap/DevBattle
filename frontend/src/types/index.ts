@@ -12,6 +12,8 @@ export type ProblemType =
   | 'nodejs'
   | 'javascript'
   | 'typescript'
+  | 'html'
+  | 'css'
   | 'html-css'
   | 'bug-fixing'
   | 'debugging'
@@ -92,6 +94,9 @@ export interface Question {
   constraints?: string[];
   hints?: string[];
   editorial?: string;
+  evaluationConfig?: Record<string, unknown>;
+  typeSpecificConfig?: Record<string, unknown>;
+  publicMetadata?: Record<string, unknown>;
   examples: {
     input: string;
     output: string;

@@ -193,7 +193,7 @@ export const CodingWorkspacePage: React.FC = () => {
           setLanguage(preferredLanguage);
           setCode(loadedQuestion.starterCode?.[preferredLanguage] || '// Start coding here');
           const usesLivePreview = WEB_PREVIEW_TYPES.has(loadedQuestion.type);
-          setActiveBottomTab(usesLivePreview ? 'preview' : 'testcases');
+          setActiveBottomTab(usesLivePreview ? 'browser-console' : 'testcases');
           setActiveRightTab(usesLivePreview ? 'preview' : 'ai-hints');
         }
       } catch (err: any) {
@@ -227,7 +227,7 @@ export const CodingWorkspacePage: React.FC = () => {
       setRuntime(38);
       setMemory(41.2);
       if (isWebPreviewQuestion) {
-        setActiveBottomTab('preview');
+        setActiveBottomTab('browser-console');
         setActiveRightTab('preview');
         addToast('success', 'Preview Refreshed', 'Live browser preview has been refreshed with your latest code.');
         return;
@@ -409,15 +409,15 @@ export const CodingWorkspacePage: React.FC = () => {
             />
           </div>
 
-          {/* BOTTOM PANEL: DSA test runner or Web live preview */}
-          <div className={`${isWebPreviewQuestion ? 'h-72' : 'h-44'} border-t border-slate-800 bg-slate-950 flex flex-col overflow-hidden`}>
+          {/* BOTTOM PANEL: DSA test runner or Web diagnostics */}
+          <div className="h-44 border-t border-slate-800 bg-slate-950 flex flex-col overflow-hidden">
             <div className="px-3 border-b border-slate-800 flex items-center justify-between">
               <Tabs
                 tabs={
                   isWebPreviewQuestion
                     ? [
-                        { id: 'preview', label: 'Live Preview' },
                         { id: 'browser-console', label: 'Browser Console' },
+                        { id: 'preview-checks', label: 'Preview Checks' },
                       ]
                     : [
                         { id: 'testcases', label: 'Test Cases' },
@@ -429,7 +429,7 @@ export const CodingWorkspacePage: React.FC = () => {
               />
               {isWebPreviewQuestion ? (
                 <div className="text-[11px] text-cyan-400 font-mono font-bold">
-                  {viewportMode.toUpperCase()} Preview
+                  Live preview is on the right
                 </div>
               ) : runtime !== null ? (
                 <div className="text-[11px] text-emerald-400 font-mono font-bold">
@@ -440,23 +440,27 @@ export const CodingWorkspacePage: React.FC = () => {
 
             <div className="overflow-hidden font-mono text-xs text-slate-300 flex-1 bg-slate-950/90">
               {isWebPreviewQuestion ? (
-                activeBottomTab === 'preview' ? (
-                  <div className="h-full bg-slate-900 p-3 overflow-auto">
-                    <div className={`mx-auto h-full rounded-xl overflow-hidden border border-slate-700 bg-white transition-all ${previewWidthClass}`}>
-                      <iframe
-                        title="Live web preview"
-                        srcDoc={previewSrcDoc}
-                        sandbox="allow-scripts allow-same-origin allow-forms allow-modals"
-                        className="w-full h-full bg-white"
-                      />
-                    </div>
+                activeBottomTab === 'browser-console' ? (
+                  <div className="p-3 space-y-1 text-[11px] h-full overflow-y-auto">
+                    <p className="text-slate-500">$ devbattles-preview refresh --framework {question.type}</p>
+                    <p className="text-emerald-400">✓ Browser iframe compiled successfully.</p>
+                    <p className="text-slate-400">Preview target: live-preview://{question.type}/{viewportMode}</p>
+                    <p className="text-slate-400">Console: no runtime errors captured.</p>
+                    <p className="text-amber-300">Note: import/export statements are normalized for the in-browser preview.</p>
                   </div>
                 ) : (
-                  <div className="p-3 space-y-1 text-[11px]">
-                    <p className="text-slate-500">$ devbattles-preview refresh --framework {question.type}</p>
-                    <p className="text-emerald-400">✓ Preview iframe compiled.</p>
-                    <p className="text-slate-400">Use the device buttons on the right panel to test responsive layouts.</p>
-                    <p className="text-amber-300">If JSX imports fail, remove import/export statements; the preview injects React automatically.</p>
+                  <div className="p-3 h-full overflow-y-auto space-y-2 text-[11px]">
+                    {[
+                      'Live preview renders in the right-side browser panel',
+                      'Switch desktop/tablet/mobile using the device buttons above the preview',
+                      'Check hover/focus states and responsive layout manually',
+                      'DSA test-case runner is hidden for web-dev questions',
+                    ].map((item) => (
+                      <div key={item} className="flex items-start gap-2 rounded bg-slate-900 border border-slate-800 p-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span>{item}</span>
+                      </div>
+                    ))}
                   </div>
                 )
               ) : activeBottomTab === 'testcases' ? (

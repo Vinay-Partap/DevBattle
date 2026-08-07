@@ -30,6 +30,8 @@ export const problemTypeEnum = pgEnum('problem_type', [
   'nodejs',
   'javascript',
   'typescript',
+  'html',
+  'css',
   'html-css',
   'bug-fixing',
   'debugging',
@@ -113,6 +115,9 @@ export const questions = pgTable(
     submissionDeadline: timestamp('submission_deadline', { withTimezone: true }),
     allowLateSubmission: boolean('allow_late_submission').notNull().default(false),
     scoringConfig: jsonb('scoring_config').notNull().default({}),
+    evaluationConfig: jsonb('evaluation_config').notNull().default({}),
+    typeSpecificConfig: jsonb('type_specific_config').notNull().default({}),
+    publicMetadata: jsonb('public_metadata').notNull().default({}),
     /** auth_user_id of the mentor/admin who authored the question. */
     createdBy: uuid('created_by').notNull(),
     attemptedCount: integer('attempted_count').notNull().default(0),

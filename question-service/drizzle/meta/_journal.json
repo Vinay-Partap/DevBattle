@@ -15,6 +15,13 @@
       "when": 1785954900144,
       "tag": "0001_wet_mantis",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786118031505,
+      "tag": "0002_purple_zombie",
+      "breakpoints": true
     }
   ]
 }

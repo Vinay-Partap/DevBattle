@@ -13,6 +13,8 @@ export type ProblemType =
   | 'nodejs'
   | 'javascript'
   | 'typescript'
+  | 'html'
+  | 'css'
   | 'html-css'
   | 'bug-fixing'
   | 'debugging'
@@ -164,6 +166,9 @@ export interface QuestionDetail {
   submissionDeadline?: string | null;
   allowLateSubmission?: boolean;
   scoringConfig?: ScoringSettings;
+  evaluationConfig?: Record<string, unknown>;
+  typeSpecificConfig?: Record<string, unknown>;
+  publicMetadata?: Record<string, unknown>;
   createdBy: string;
   attemptedCount: number;
   solvedCount: number;
@@ -230,6 +235,9 @@ export interface CreateQuestionDto {
   plagiarism?: PlagiarismSettings;
   submission?: SubmissionSettings;
   scoring?: ScoringSettings;
+  evaluationConfig?: Record<string, unknown>;
+  typeSpecificConfig?: Record<string, unknown>;
+  publicMetadata?: Record<string, unknown>;
   examples?: QuestionExample[];
   starterCode?: Record<string, string>;
   testCases?: Array<{

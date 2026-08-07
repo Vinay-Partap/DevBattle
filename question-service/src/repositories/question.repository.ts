@@ -142,6 +142,9 @@ const assemble = (row: QuestionWithRelations, isBookmarked = false): QuestionDet
     : null,
   allowLateSubmission: (row as any).allowLateSubmission ?? false,
   scoringConfig: ((row as any).scoringConfig ?? {}) as any,
+  evaluationConfig: ((row as any).evaluationConfig ?? {}) as any,
+  typeSpecificConfig: ((row as any).typeSpecificConfig ?? {}) as any,
+  publicMetadata: ((row as any).publicMetadata ?? {}) as any,
   createdBy: row.createdBy,
   attemptedCount: row.attemptedCount ?? 0,
   solvedCount: row.solvedCount ?? 0,
@@ -755,6 +758,9 @@ export const questionRepository = {
               : null,
             allowLateSubmission: dto.submission?.allowLateSubmission ?? false,
             scoringConfig: dto.scoring ?? {},
+            evaluationConfig: dto.evaluationConfig ?? {},
+            typeSpecificConfig: dto.typeSpecificConfig ?? {},
+            publicMetadata: dto.publicMetadata ?? {},
             createdBy: dto.createdBy,
           })
           .returning();
@@ -841,6 +847,9 @@ export const questionRepository = {
         submissionDeadline: dto.submission?.submissionDeadline ?? null,
         allowLateSubmission: dto.submission?.allowLateSubmission ?? false,
         scoringConfig: dto.scoring ?? {},
+        evaluationConfig: dto.evaluationConfig ?? {},
+        typeSpecificConfig: dto.typeSpecificConfig ?? {},
+        publicMetadata: dto.publicMetadata ?? {},
         createdBy: dto.createdBy,
         attemptedCount: 0,
         solvedCount: 0,
@@ -930,6 +939,13 @@ export const questionRepository = {
                 }
               : {}),
             ...(patch.scoring !== undefined ? { scoringConfig: patch.scoring } : {}),
+            ...(patch.evaluationConfig !== undefined
+              ? { evaluationConfig: patch.evaluationConfig }
+              : {}),
+            ...(patch.typeSpecificConfig !== undefined
+              ? { typeSpecificConfig: patch.typeSpecificConfig }
+              : {}),
+            ...(patch.publicMetadata !== undefined ? { publicMetadata: patch.publicMetadata } : {}),
             updatedAt: new Date(),
           })
           .where(eq(questions.id, id))

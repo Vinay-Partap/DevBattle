@@ -14,6 +14,8 @@ import { Role } from '../constants/roles';
 import { ApiError } from '../utils/error';
 import { Messages } from '../constants/messages';
 import { PaginatedResult } from '../utils/pagination';
+import { evaluationEngine } from '../evaluation/EvaluationEngine';
+import { EvaluationResult } from '../evaluation/types';
 
 /** Abstraction so the service can be unit-tested with a mock repository. */
 export interface IQuestionRepository {
@@ -81,7 +83,7 @@ export class QuestionService {
       if (question.status !== 'published') {
         throw ApiError.notFound(Messages.QUESTION_NOT_FOUND, 'QUESTION_NOT_FOUND');
       }
-      return { ...question, testCases: question.testCases.filter((tc) => !tc.isHidden) };
+      return this.toPublicDetail(question);
     }
     return question;
   }
@@ -127,6 +129,12 @@ export class QuestionService {
   }
 
   async setStatus(id: string, status: QuestionStatus): Promise<QuestionDetail> {
+    if (status === 'published') {
+      const existing = await this.repository.findById(id);
+      if (!existing) throw ApiError.notFound(Messages.QUESTION_NOT_FOUND, 'QUESTION_NOT_FOUND');
+      this.assertPublishable(existing);
+    }
+
     const updated = await this.repository.setStatus(id, status);
     if (!updated) throw ApiError.notFound(Messages.QUESTION_NOT_FOUND, 'QUESTION_NOT_FOUND');
     return updated;
@@ -171,6 +179,22 @@ export class QuestionService {
     return { bookmarked: false };
   }
 
+  /* ----------------------------- Evaluation ----------------------------- */
+
+  async evaluate(
+    id: string,
+    requester: Requester,
+    submission: Record<string, unknown>,
+  ): Promise<EvaluationResult> {
+    const question = await this.getById(id, requester);
+    return evaluationEngine.evaluate({
+      question,
+      requester,
+      submission: submission as any,
+      includeHidden: false,
+    });
+  }
+
   /* ----------------------------- Admin --------------------------------- */
 
   async statistics(): Promise<QuestionStatistics> {
@@ -193,6 +217,39 @@ export class QuestionService {
   }
 
   /* ----------------------------- Helpers ------------------------------- */
+
+
+  private toPublicDetail(question: QuestionDetail): QuestionDetail {
+    return {
+      ...question,
+      testCases: question.testCases.filter((tc) => !tc.isHidden),
+      editorial: null,
+      aiReviewRules: [],
+      evaluationConfig: {},
+      typeSpecificConfig: question.publicMetadata ?? {},
+      normalizedRequirements: question.normalizedRequirements?.filter(
+        (requirement) => requirement.metadata?.visibility !== 'private',
+      ),
+    };
+  }
+
+  private assertPublishable(question: QuestionDetail): void {
+    if (!question.title?.trim() || !question.description?.trim()) {
+      throw ApiError.unprocessable('Title and description are required before publishing.', [], 'QUESTION_INCOMPLETE');
+    }
+
+    if (question.type !== 'mcq' && question.type !== 'system-design') {
+      const hasStarterCode = Object.keys(question.starterCode ?? {}).length > 0;
+      const hasEvaluation = question.testCases.length > 0 || Boolean(question.evaluationConfig && Object.keys(question.evaluationConfig).length);
+      if (!hasStarterCode || !hasEvaluation) {
+        throw ApiError.unprocessable(
+          'Starter code and evaluation configuration are required before publishing this question type.',
+          [],
+          'EVALUATION_CONFIG_REQUIRED',
+        );
+      }
+    }
+  }
 
   private async uniqueSlug(title: string, exceptId?: string): Promise<string> {
     const base = slugify(title);

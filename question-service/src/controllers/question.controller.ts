@@ -65,6 +65,11 @@ export const questionController = {
     ok(res, Messages.BOOKMARK_REMOVED, result);
   },
 
+  evaluate: async (req: Request, res: Response): Promise<void> => {
+    const result = await questionService.evaluate(req.params.id, req.user!, req.body);
+    ok(res, 'Evaluation completed.', result);
+  },
+
   statistics: async (_req: Request, res: Response): Promise<void> => {
     const stats = await questionService.statistics();
     ok(res, Messages.STATISTICS_FETCHED, stats);
